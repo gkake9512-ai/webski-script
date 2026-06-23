@@ -1,0 +1,2425 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ウェブスキAG スクリプト</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ========== RESET & ROOT ========== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1B3A6B;--navy-l:#2E5FAA;
+  --orange:#E07020;--green:#1E7A4A;--green-l:#27AE60;
+  --red:#C0392B;--teal:#0E7490;
+  --yellow:#F5A623;--purple:#7B2FBE;
+  --bg:#F5F6FA;--white:#fff;
+  --text:#1A1A2E;--text-s:#4A4A6A;--text-xs:#8888A8;
+  --border:#DDE1EC;
+  --radius:12px;--radius-s:8px;
+  --shadow-s:0 2px 8px rgba(27,58,107,.08);
+  --shadow-m:0 4px 20px rgba(27,58,107,.13);
+}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+
+/* ========== PAGES ========== */
+.page{display:none;min-height:100vh;flex-direction:column}
+.page.active{display:flex}
+
+/* ========== TOP NAV BAR ========== */
+#top-nav{background:var(--navy);color:#fff;padding:0 16px;height:52px;display:flex;align-items:center;gap:10px;flex-shrink:0;position:sticky;top:0;z-index:50}
+#top-nav .nav-logo{font-size:15px;font-weight:900;letter-spacing:-.3px}
+#top-nav .nav-logo span{color:var(--orange)}
+#top-nav .nav-spacer{flex:1}
+#top-nav .nav-user{font-size:11px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.nav-back-btn{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;transition:background .15s}
+.nav-back-btn:hover{background:rgba(255,255,255,.25)}
+.nav-icon-btn{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;transition:all .15s}
+.nav-icon-btn:hover{background:rgba(255,255,255,.22)}
+
+/* ========== LOGIN PAGE ========== */
+#page-login{align-items:center;justify-content:center;background:linear-gradient(135deg,#0F2147 0%,#1B3A6B 60%,#2E5FAA 100%)}
+.login-box{background:#fff;border-radius:20px;padding:36px 32px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .ll-main{font-size:22px;font-weight:900;color:var(--navy);letter-spacing:-.5px}
+.login-logo .ll-main span{color:var(--orange)}
+.login-logo .ll-sub{font-size:11px;color:var(--text-xs);margin-top:2px}
+.login-field{margin-bottom:14px}
+.login-field label{display:block;font-size:11px;font-weight:700;color:var(--text-s);margin-bottom:5px}
+.login-field input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-s);font-size:14px;outline:none;transition:border-color .15s}
+.login-field input:focus{border-color:var(--navy-l)}
+.login-btn{width:100%;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius-s);font-size:14px;font-weight:700;margin-top:6px;transition:opacity .15s}
+.login-btn:hover{opacity:.88}
+.login-btn:disabled{opacity:.5;cursor:default}
+.login-error{font-size:12px;color:var(--red);margin-top:8px;text-align:center;min-height:18px}
+
+/* ========== TOP PAGE ========== */
+#page-top .top-body{flex:1;padding:24px 16px}
+.top-greeting{font-size:13px;color:var(--text-s);margin-bottom:4px}
+.top-name{font-size:22px;font-weight:900;color:var(--navy);margin-bottom:24px}
+.top-menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.top-menu-btn{background:#fff;border:2px solid var(--border);border-radius:16px;padding:24px 16px;text-align:center;transition:all .18s;display:flex;flex-direction:column;align-items:center;gap:8px}
+.top-menu-btn:hover{border-color:var(--navy-l);box-shadow:var(--shadow-m);transform:translateY(-2px)}
+.top-menu-btn .tmb-icon{font-size:32px}
+.top-menu-btn .tmb-label{font-size:13px;font-weight:700;color:var(--navy)}
+.top-menu-btn .tmb-desc{font-size:10px;color:var(--text-xs);line-height:1.4}
+.top-menu-admin{grid-column:1/-1;border-color:#E8D5F5;background:#FAF5FF}
+.top-menu-admin .tmb-label{color:var(--purple)}
+
+/* ========== STAFF SELECT PAGE ========== */
+#page-staff .staff-body{flex:1;padding:16px}
+.staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.staff-card{background:#fff;border:2px solid var(--border);border-radius:12px;padding:20px 12px;text-align:center;transition:all .15s}
+.staff-card:hover{border-color:var(--navy-l);box-shadow:var(--shadow-s)}
+.staff-card .sc-avatar{width:48px;height:48px;border-radius:50%;background:var(--navy);color:#fff;font-size:18px;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.staff-card .sc-name{font-size:13px;font-weight:700;color:var(--navy)}
+.staff-card .sc-role{font-size:10px;color:var(--text-xs);margin-top:2px}
+
+/* ========== ADMIN PAGE ========== */
+#admin-pw-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;padding:16px}
+#admin-pw-modal.open{display:flex}
+.admin-pw-box{background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:320px}
+.admin-pw-box h3{font-size:16px;font-weight:900;color:var(--purple);margin-bottom:16px;text-align:center}
+.admin-pw-box input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-s);font-size:14px;outline:none;margin-bottom:10px}
+.admin-pw-box input:focus{border-color:var(--purple)}
+.admin-pw-error{font-size:11px;color:var(--red);margin-bottom:8px;min-height:16px}
+.admin-pw-btn{width:100%;padding:10px;background:var(--purple);color:#fff;border:none;border-radius:var(--radius-s);font-weight:700;font-size:13px}
+
+#page-admin .admin-body{flex:1;padding:16px;overflow-y:auto}
+.admin-section{background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;border:1.5px solid var(--border)}
+.admin-section-title{font-size:12px;font-weight:700;color:var(--text-xs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.admin-user-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.admin-user-row:last-child{border-bottom:none}
+.admin-user-avatar{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.admin-user-info{flex:1;min-width:0}
+.admin-user-name{font-size:13px;font-weight:700;color:var(--text)}
+.admin-user-meta{font-size:10px;color:var(--text-xs);margin-top:1px}
+.admin-user-actions{display:flex;gap:5px;flex-shrink:0}
+.au-btn{font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;border:none;transition:all .12s}
+.au-btn.reset{background:#EEF3FC;color:var(--navy)}
+.au-btn.reset:hover{background:#dde6f7}
+.au-btn.delete{background:#FFEBEE;color:var(--red)}
+.au-btn.delete:hover{background:#ffcdd2}
+.au-btn.badge-admin{background:#F3E5F5;color:var(--purple)}
+.add-user-form{display:flex;flex-direction:column;gap:8px}
+.add-user-row{display:flex;gap:8px}
+.add-user-row input,.add-user-row select{flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-s);font-size:12px;outline:none}
+.add-user-row input:focus,.add-user-row select:focus{border-color:var(--navy-l)}
+.add-user-btn{padding:8px 16px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius-s);font-size:12px;font-weight:700;white-space:nowrap}
+
+/* 集計セクション */
+.stats-filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.stats-filter-row select,.stats-filter-row input{flex:1;min-width:100px;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-s);font-size:12px;outline:none}
+.stats-filter-row select:focus,.stats-filter-row input:focus{border-color:var(--navy-l)}
+.stats-run-btn{padding:7px 16px;background:var(--teal);color:#fff;border:none;border-radius:var(--radius-s);font-size:12px;font-weight:700;white-space:nowrap}
+.stats-checklist{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.stats-checklist label{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--text-s);background:var(--bg);padding:4px 10px;border-radius:20px;border:1.5px solid var(--border);cursor:pointer}
+.stats-checklist input[type=checkbox]{accent-color:var(--teal)}
+#stats-result{font-size:12px}
+.stats-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-bottom:14px}
+.stat-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-s);padding:10px;text-align:center}
+.stat-card-num{font-family:'DM Mono',monospace;font-size:20px;font-weight:700}
+.stat-card-label{font-size:9px;color:var(--text-xs);font-weight:700;margin-top:2px}
+.stats-table{width:100%;border-collapse:collapse;font-size:11px}
+.stats-table th{background:var(--bg);padding:6px 8px;text-align:left;font-weight:700;color:var(--text-xs);border-bottom:2px solid var(--border)}
+.stats-table td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top}
+.stats-table tr:hover td{background:#F8F9FE}
+
+/* ========== RECORDS PAGE ========== */
+#page-records .records-body{flex:1;padding:16px;overflow-y:auto}
+.records-filter{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.records-filter select,.records-filter input{flex:1;min-width:110px;padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--radius-s);font-size:12px;outline:none;background:#fff}
+.records-filter select:focus,.records-filter input:focus{border-color:var(--navy-l)}
+.rec-stats{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px}
+.rec-stat{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-s);padding:8px 12px;text-align:center;flex-shrink:0;min-width:70px}
+.rec-stat-num{font-family:'DM Mono',monospace;font-size:18px;font-weight:700}
+.rec-stat-label{font-size:9px;color:var(--text-xs);font-weight:700}
+.rec-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-s);padding:12px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.rec-card:hover{border-color:var(--navy-l)}
+.rec-card-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.rec-result-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;flex-shrink:0}
+.rc-won{background:#E8F5E9;color:#2E7D32}
+.rc-pending{background:#FFF8E1;color:#7A5800}
+.rc-cut{background:#F3E5F5;color:#6A1B9A}
+.rc-bridge{background:#E8EAF6;color:#283593}
+.rc-lost{background:#FFEBEE;color:#C62828}
+.rc-money{background:#FFF3E0;color:#E65100}
+.rec-card-name{font-size:13px;font-weight:700;flex:1}
+.rec-card-date{font-size:10px;color:var(--text-xs)}
+.rec-card-staff{font-size:10px;color:var(--text-xs);margin-bottom:5px}
+.rec-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px}
+.rec-tag{font-size:9px;padding:1px 6px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:var(--text-s)}
+.rec-yes{display:flex;gap:10px;font-size:10px;color:var(--text-xs)}
+.rec-yes-n{font-family:'DM Mono',monospace;font-weight:700;font-size:12px}
+.br-row{display:flex;align-items:center;gap:6px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border);font-size:10px;color:var(--text-xs)}
+.br-select{font-family:'Noto Sans JP',sans-serif;font-size:11px;padding:2px 6px;border:1.5px solid var(--border);border-radius:4px;background:#fff;color:var(--text);outline:none}
+.br-badge{font-size:9px;font-weight:700;padding:1px 7px;border-radius:10px}
+.br-pre{background:#F3F4F6;color:#6B7280}
+.br-won{background:#E8F5E9;color:#2E7D32}
+.br-lost{background:#FFEBEE;color:#C62828}
+.br-jump{background:#FFF3E0;color:#E65100}
+.br-followup{background:#E8EAF6;color:#283593}
+
+/* ========== SCRIPT PAGE WRAPPER ========== */
+#page-script{display:flex;flex-direction:column;overflow:hidden;height:100vh}
+#script-wrap{overflow:hidden}
+
+/* ========== MODAL (records detail) ========== */
+#rec-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:16px}
+#rec-modal.open{display:flex}
+#rec-modal-inner{background:#fff;border-radius:var(--radius);width:100%;max-width:480px;max-height:88vh;overflow-y:auto;padding:16px}
+#rec-modal-close{float:right;background:none;border:none;font-size:18px;color:var(--text-xs);cursor:pointer}
+.rm-section{font-size:9px;font-weight:700;color:var(--text-xs);text-transform:uppercase;letter-spacing:.08em;margin:12px 0 5px;border-top:1px solid var(--border);padding-top:8px}
+.rm-row{display:flex;gap:8px;margin-bottom:4px;font-size:11px}
+.rm-label{color:var(--text-xs);font-weight:700;width:70px;flex-shrink:0}
+.rm-val{flex:1;line-height:1.5}
+.rm-del-btn{font-family:'Noto Sans JP',sans-serif;font-size:11px;padding:5px 12px;border:1.5px solid var(--red);color:var(--red);background:#fff;border-radius:var(--radius-s);cursor:pointer;margin-top:14px}
+
+/* ========== NOTIF ========== */
+#app-notif{position:fixed;top:60px;right:12px;background:var(--navy);color:#fff;border-radius:var(--radius);padding:8px 14px;font-size:11px;font-weight:500;box-shadow:var(--shadow-m);transform:translateY(-8px);opacity:0;transition:all .2s;pointer-events:none;z-index:999;border-left:3px solid var(--orange)}
+#app-notif.show{opacity:1;transform:translateY(0)}
+
+/* ========== TOAST / LOADING ========== */
+#loading-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:999;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--navy)}
+#loading-overlay.show{display:flex}
+</style>
+</head>
+<body>
+
+<!-- ローディング -->
+<div id="loading-overlay" class="show">読み込み中...</div>
+<div id="app-notif"></div>
+
+<!-- ========== ログインページ ========== -->
+<div id="page-login" class="page">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="ll-main">ウェブスキ<span>AG</span></div>
+      <div class="ll-sub">営業スクリプト</div>
+    </div>
+    <div class="login-field">
+      <label>メールアドレス</label>
+      <input type="email" id="login-email" placeholder="name@example.com" autocomplete="email">
+    </div>
+    <div class="login-field">
+      <label>パスワード</label>
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">ログイン</button>
+  </div>
+</div>
+
+<!-- ========== トップページ ========== -->
+<div id="page-top" class="page">
+  <div id="top-nav">
+    <div class="nav-logo">ウェブスキ<span>AG</span></div>
+    <div class="nav-spacer"></div>
+    <span class="nav-user" id="nav-user-name"></span>
+    <button class="nav-icon-btn" onclick="doLogout()">ログアウト</button>
+  </div>
+  <div class="top-body">
+    <div class="top-greeting">おつかれさまです</div>
+    <div class="top-name" id="top-user-name">ー</div>
+    <div class="top-menu-grid">
+      <button class="top-menu-btn" onclick="goStaffSelect()">
+        <span class="tmb-icon">🎯</span>
+        <span class="tmb-label">営業準備</span>
+        <span class="tmb-desc">担当者を選んでスクリプトを開始</span>
+      </button>
+      <button class="top-menu-btn" onclick="goRecords()">
+        <span class="tmb-icon">📋</span>
+        <span class="tmb-label">商談一覧</span>
+        <span class="tmb-desc">全員の商談記録を確認</span>
+      </button>
+      <button class="top-menu-btn top-menu-admin" onclick="openAdminPwModal()">
+        <span class="tmb-icon">⚙️</span>
+        <span class="tmb-label">管理者画面</span>
+        <span class="tmb-desc">ユーザー管理・集計レポート</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 担当者選択ページ ========== -->
+<div id="page-staff" class="page">
+  <div id="top-nav-staff" style="background:var(--navy);color:#fff;padding:0 16px;height:52px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <button class="nav-back-btn" onclick="goTop()">◀ トップへ</button>
+    <span style="font-size:14px;font-weight:700;flex:1;text-align:center">担当者を選ぶ</span>
+    <span style="width:60px"></span>
+  </div>
+  <div class="staff-body">
+    <div class="staff-grid" id="staff-grid"></div>
+  </div>
+</div>
+
+<!-- ========== スクリプトページ ========== -->
+<div id="page-script" class="page">
+  <div id="top-nav-script" style="background:var(--navy);color:#fff;padding:0 10px;height:52px;display:flex;align-items:center;gap:6px;flex-shrink:0">
+    <button class="nav-back-btn" onclick="goTop()">◀ トップへ</button>
+    <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.7);white-space:nowrap;max-width:60px;overflow:hidden;text-overflow:ellipsis" id="script-staff-label"></span>
+    <div id="mode-toggle" style="display:flex;gap:0;background:rgba(255,255,255,.1);border-radius:20px;padding:3px;flex-shrink:0">
+      <button class="mode-btn active" onclick="setMode('bridge')">🔗 ブリッジ</button>
+      <button class="mode-btn" onclick="setMode('closer')">⚡ クローザー</button>
+    </div>
+    <div id="stepper" style="display:flex;align-items:center;gap:0;flex:1;overflow:hidden;min-width:0"></div>
+    <div id="header-badge" style="font-size:10px;font-weight:700;color:var(--orange-l);white-space:nowrap;background:rgba(255,255,255,.08);padding:2px 8px;border-radius:20px">—</div>
+    <div id="ice-temp-badge"></div>
+    <button class="nav-icon-btn" onclick="openHistoryPage()">📋</button>
+    <button id="reset-btn" style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;padding:4px 8px;border-radius:20px;" onclick="resetAll()">リセット</button>
+  </div>
+  <div id="script-wrap">
+    <!-- v14のHTMLがここに入る（動的に挿入） -->
+  </div>
+</div>
+
+<!-- ========== 商談一覧ページ ========== -->
+<div id="page-records" class="page">
+  <div style="background:var(--navy);color:#fff;padding:0 16px;height:52px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <button class="nav-back-btn" onclick="goTop()">◀ トップへ</button>
+    <span style="font-size:14px;font-weight:700;flex:1;text-align:center">商談一覧</span>
+    <span style="width:60px"></span>
+  </div>
+  <div class="records-body">
+    <div class="rec-stats" id="rec-stats"></div>
+    <div class="records-filter">
+      <select id="rf-staff" onchange="loadRecords()"><option value="">全員</option></select>
+      <select id="rf-result" onchange="loadRecords()">
+        <option value="">全結果</option>
+        <option value="won">🎉 成約</option>
+        <option value="pending">⏳ 保留</option>
+        <option value="cut">✂️ 見切り</option>
+        <option value="bridge">🔗 ブリッジ</option>
+        <option value="lost">❌ 失注</option>
+        <option value="money">💸 資金不可</option>
+      </select>
+      <select id="rf-mode" onchange="loadRecords()">
+        <option value="">全モード</option>
+        <option value="bridge">ブリッジ</option>
+        <option value="closer">クローザー</option>
+      </select>
+    </div>
+    <div id="rec-list"></div>
+    <div id="rec-empty" style="display:none;text-align:center;padding:40px;color:var(--text-xs);font-size:13px">記録がありません</div>
+  </div>
+</div>
+
+<!-- ========== 管理者ページ ========== -->
+<div id="page-admin" class="page">
+  <div style="background:var(--purple);color:#fff;padding:0 16px;height:52px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <button class="nav-back-btn" onclick="goTop()">◀ トップへ</button>
+    <span style="font-size:14px;font-weight:700;flex:1;text-align:center">管理者画面</span>
+    <span style="width:60px"></span>
+  </div>
+  <div class="admin-body">
+    <!-- ユーザー管理 -->
+    <div class="admin-section">
+      <div class="admin-section-title">👥 ユーザー管理</div>
+      <div id="admin-user-list"></div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--text-xs);margin-bottom:8px">＋ 新規ユーザー追加</div>
+        <div class="add-user-form">
+          <div class="add-user-row">
+            <input type="text" id="new-user-name" placeholder="表示名（例：田中太郎）">
+            <input type="email" id="new-user-email" placeholder="メールアドレス">
+          </div>
+          <div class="add-user-row">
+            <input type="password" id="new-user-pw" placeholder="初期パスワード（8文字以上）">
+            <select id="new-user-role">
+              <option value="staff">スタッフ</option>
+              <option value="admin">管理者</option>
+            </select>
+            <button class="add-user-btn" onclick="addUser()">追加</button>
+          </div>
+        </div>
+        <div id="add-user-msg" style="font-size:11px;margin-top:6px;min-height:16px"></div>
+      </div>
+    </div>
+    <!-- 集計レポート -->
+    <div class="admin-section">
+      <div class="admin-section-title">📊 集計レポート</div>
+      <div class="stats-filter-row">
+        <select id="stats-staff"><option value="">全スタッフ</option></select>
+        <input type="date" id="stats-from">
+        <input type="date" id="stats-to">
+        <button class="stats-run-btn" onclick="runStats()">集計</button>
+      </div>
+      <div class="stats-checklist">
+        <label><input type="checkbox" name="sc" value="results" checked> 結果内訳</label>
+        <label><input type="checkbox" name="sc" value="rate" checked> 成約率</label>
+        <label><input type="checkbox" name="sc" value="yes" checked> YES平均</label>
+        <label><input type="checkbox" name="sc" value="ice" > アイスネタ</label>
+        <label><input type="checkbox" name="sc" value="job" > 職種分布</label>
+        <label><input type="checkbox" name="sc" value="concern"> 懸念傾向</label>
+        <label><input type="checkbox" name="sc" value="attr" > 属性ルート</label>
+      </div>
+      <div id="stats-result"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 管理者PW確認モーダル -->
+<div id="admin-pw-modal">
+  <div class="admin-pw-box">
+    <h3>🔐 管理者認証</h3>
+    <input type="password" id="admin-pw-input" placeholder="管理者パスワード" onkeydown="if(event.key==='Enter')checkAdminPw()">
+    <div class="admin-pw-error" id="admin-pw-error"></div>
+    <div style="display:flex;gap:8px">
+      <button style="flex:1;padding:8px;background:var(--border);border:none;border-radius:var(--radius-s);font-weight:700;font-size:13px" onclick="closeAdminPwModal()">キャンセル</button>
+      <button class="admin-pw-btn" style="flex:1" onclick="checkAdminPw()">入室</button>
+    </div>
+  </div>
+</div>
+
+<!-- 商談詳細モーダル -->
+<div id="rec-modal">
+  <div id="rec-modal-inner">
+    <button id="rec-modal-close" onclick="closeRecModal()">✕</button>
+    <div id="rec-modal-body"></div>
+  </div>
+</div>
+
+<style>
+/* ===== v14 SCRIPT STYLES (scoped) ===== */
+#script-wrap {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+#script-wrap-vars{/* unused */}
+:root{
+  --navy:#1B3A6B;--navy-l:#2E5FAA;--navy-ll:#4A7BC8;
+  --orange:#E07020;--orange-l:#F5A050;
+  --green:#1E7A4A;--green-l:#27AE60;
+  --red:#C0392B;
+  --teal:#0E7490;--teal-l:#06B6D4;--teal-bg:#E0F7FA;
+  --yellow:#B45309;--yellow-bg:#FFFBEB;--yellow-border:#FCD34D;
+  --purple:#6D28D9;--purple-l:#8B5CF6;--purple-bg:#F5F3FF;
+  --bg:#F4F6FA;--bg-card:#FFFFFF;
+  --border:#D8DCE8;--text:#1A1A2E;--text-s:#5A5A78;--text-xs:#9090A8;
+  --shadow-m:0 4px 20px rgba(27,58,107,.15);
+  --radius:10px;--radius-s:6px;
+}
+#script-wrap{font-family:'Noto Sans JP',sans-serif}
+#header{background:var(--navy);color:#fff;display:flex;align-items:center;gap:12px;padding:0 16px;height:48px;flex-shrink:0;border-bottom:2px solid var(--orange)}
+#header .logo{font-weight:900;font-size:14px;letter-spacing:.04em;white-space:nowrap}
+#header .logo span{color:var(--orange-l)}
+#mode-toggle{display:flex;gap:0;background:rgba(255,255,255,.1);border-radius:20px;padding:3px;flex-shrink:0}
+.mode-btn{font-family:'Noto Sans JP',sans-serif;font-size:10px;font-weight:700;padding:3px 10px;border-radius:16px;border:none;background:transparent;color:rgba(255,255,255,.55);cursor:pointer;transition:all .2s;white-space:nowrap}
+.mode-btn.active{background:var(--orange);color:#fff}
+#stepper{display:flex;align-items:center;gap:0;flex:1;overflow:hidden;min-width:0}
+.step-pip{width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:rgba(255,255,255,.4);cursor:pointer;flex-shrink:0;transition:all .2s}
+.step-pip:hover{border-color:var(--orange-l);color:var(--orange-l)}
+.step-pip.done{background:var(--navy-l);border-color:var(--navy-l);color:#fff}
+.step-pip.active{background:var(--orange);border-color:var(--orange);color:#fff;box-shadow:0 0 0 3px rgba(224,112,32,.35)}
+.step-pip.bridge-end{border-color:var(--purple-l);color:var(--purple-l)}
+.step-pip.bridge-end.active{background:var(--purple);border-color:var(--purple);box-shadow:0 0 0 3px rgba(109,40,217,.35)}
+.step-connector{height:2px;flex:1;background:rgba(255,255,255,.15);max-width:20px}
+.step-connector.done{background:var(--navy-l)}
+#header-badge{font-size:11px;font-weight:700;color:var(--orange-l);white-space:nowrap;background:rgba(255,255,255,.08);padding:3px 10px;border-radius:20px}
+#reset-btn{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.6);cursor:pointer;white-space:nowrap}
+#reset-btn:hover{border-color:var(--orange-l);color:var(--orange-l)}
+#main{display:grid;grid-template-columns:280px 1fr 360px;grid-template-rows:1fr;overflow:hidden;height:calc(100vh - 52px)}
+.panel{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border);min-height:0;height:100%}
+.panel:last-child{border-right:none}
+.panel-head{padding:10px 14px;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text-xs);text-transform:uppercase;background:var(--bg-card);border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:6px}
+.panel-head .dot{width:6px;height:6px;border-radius:50%}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+.panel-body::-webkit-scrollbar{width:4px}
+.panel-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+/* ---- 左カラム：トグル式グループ ---- */
+#col-keys{background:var(--bg)}
+.key-group{margin-bottom:6px;border-radius:var(--radius-s);overflow:hidden;border:1px solid var(--border);background:var(--bg-card)}
+.key-group-header{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;user-select:none;background:var(--bg-card);transition:background .15s}
+.key-group-header:hover{background:#F0F4FC}
+.key-group-label{font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--text-s);text-transform:uppercase}
+.key-group-arrow{font-size:10px;color:var(--text-xs);transition:transform .2s}
+.key-group-body{display:none;padding:8px 8px 10px}
+.key-group-body.open{display:block}
+.key-grid{display:flex;flex-wrap:wrap;gap:5px}
+.key-btn{font-family:'Noto Sans JP',sans-serif;font-size:11px;font-weight:500;padding:5px 9px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg-card);color:var(--text);cursor:pointer;transition:all .15s;line-height:1.3}
+.key-btn:hover{border-color:var(--navy-l);color:var(--navy);background:#EEF3FC}
+.key-btn:active{transform:scale(.96)}
+.key-btn.tapped{background:var(--navy);border-color:var(--navy);color:#fff}
+.key-btn.orange{border-color:var(--orange);color:var(--orange)}.key-btn.orange:hover{background:#FFF0E0}.key-btn.orange.tapped{background:var(--orange);border-color:var(--orange);color:#fff}
+.key-btn.red{border-color:var(--red);color:var(--red)}.key-btn.red:hover{background:#FDECEA}.key-btn.red.tapped{background:var(--red);border-color:var(--red);color:#fff}
+.key-btn.green{border-color:var(--green);color:var(--green)}.key-btn.green:hover{background:#E8F8EE}.key-btn.green.tapped{background:var(--green);border-color:var(--green);color:#fff}
+.key-btn.teal{border-color:var(--teal);color:var(--teal)}.key-btn.teal:hover{background:var(--teal-bg)}.key-btn.teal.tapped{background:var(--teal);border-color:var(--teal);color:#fff}
+.key-btn.yellow{border-color:var(--yellow);color:var(--yellow)}.key-btn.yellow:hover{background:var(--yellow-bg)}.key-btn.yellow.tapped{background:var(--yellow);border-color:var(--yellow);color:#fff}
+.key-btn.purple{border-color:var(--purple);color:var(--purple)}.key-btn.purple:hover{background:var(--purple-bg)}.key-btn.purple.tapped{background:var(--purple);border-color:var(--purple);color:#fff}
+.attr-talk-preview{margin-top:8px;background:var(--teal-bg);border-left:3px solid var(--teal);border-radius:0 var(--radius-s) var(--radius-s) 0;padding:8px 10px;font-size:11px;line-height:1.6}
+.attr-talk-preview .atp-label{font-size:9px;font-weight:700;color:var(--teal);text-transform:uppercase;margin-bottom:5px;display:block}
+.attr-talk-preview .atp-line{padding:3px 0;border-bottom:1px dashed rgba(14,116,144,.2);font-size:11px;line-height:1.6}
+.attr-talk-preview .atp-line:last-child{border-bottom:none}
+.ice-talk-preview{margin-top:6px;background:#FFF0E0;border-left:3px solid var(--orange);border-radius:0 var(--radius-s) var(--radius-s) 0;padding:7px 10px;font-size:11px;line-height:1.6}
+/* アイスブレイク温度計 */
+.ice-temp-row{display:flex;gap:5px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
+.ice-temp-label{font-size:9px;font-weight:700;color:var(--text-xs);align-self:center;white-space:nowrap}
+.ice-temp-btn{flex:1;padding:6px 4px;border-radius:var(--radius-s);border:1.5px solid var(--border);background:var(--bg);font-size:11px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;line-height:1.3}
+.ice-temp-btn .itb-icon{font-size:16px;display:block;margin-bottom:2px}
+.ice-temp-btn .itb-text{font-size:9px;display:block;color:var(--text-xs)}
+.ice-temp-btn:hover{border-color:var(--navy-l)}
+.ice-temp-btn.active-cold{border-color:#90CAF9;background:#E3F2FD;color:#1565C0}
+.ice-temp-btn.active-warm{border-color:var(--green);background:#E8F5E9;color:#2E7D32}
+.ice-temp-btn.active-hot{border-color:var(--orange);background:#FFF3E0;color:#E65100}
+/* ヘッダー内アイス温度バッジ */
+#ice-temp-badge{display:none;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 8px;border-radius:20px;margin-left:6px}
+#ice-temp-badge.cold{display:flex;background:#E3F2FD;color:#1565C0}
+#ice-temp-badge.warm{display:flex;background:#E8F5E9;color:#2E7D32}
+#ice-temp-badge.hot{display:flex;background:#FFF3E0;color:#E65100}
+.age-grid{display:grid !important;grid-template-columns:repeat(7,1fr);gap:3px !important}
+.age-btn{padding:4px 2px !important;font-size:11px !important;text-align:center;border-radius:4px !important}
+
+/* ---- 中カラム ---- */
+#col-sheet{background:var(--bg-card)}
+.sheet-row{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px dashed var(--border)}
+.sheet-label{font-size:10px;font-weight:700;color:var(--text-xs);width:80px;flex-shrink:0;padding-top:2px;line-height:1.4}
+.sheet-val{flex:1;font-size:12px;min-height:20px;line-height:1.5;word-break:break-all}
+.sheet-val .tag{display:inline-block;background:var(--navy);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;margin:2px 3px 2px 0}
+.sheet-val .tag.orange{background:var(--orange)}.sheet-val .tag.green{background:var(--green)}.sheet-val .tag.red{background:var(--red)}.sheet-val .tag.teal{background:var(--teal)}.sheet-val .tag.yellow{background:var(--yellow)}.sheet-val .tag.purple{background:var(--purple)}
+.sheet-val .empty{color:var(--text-xs);font-size:11px}
+.sheet-section-head{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--text-xs);text-transform:uppercase;padding:10px 0 4px;display:block;border-top:1px solid var(--border);margin-top:4px}
+.sheet-section-head:first-child{border-top:none;margin-top:0}
+#yes-counter{background:#EEF3FC;border-radius:var(--radius-s);padding:10px 12px;margin-bottom:10px}
+.yes-counter-title{font-size:9px;font-weight:700;color:var(--text-xs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.yes-counter-title .yes-c-sub{font-size:9px;font-weight:400;color:var(--text-xs);letter-spacing:0;text-transform:none}
+.yes-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.yes-row:last-child{margin-bottom:0}
+.yes-type-pill{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.yes-type-pill.intent{background:var(--navy);color:#fff}
+.yes-type-pill.positive{background:var(--green);color:#fff}
+.yes-controls{display:flex;align-items:center;gap:4px;flex:1;justify-content:center}
+.yes-ctrl-btn{width:26px;height:26px;border-radius:50%;border:none;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;transition:all .12s;flex-shrink:0}
+.yes-ctrl-btn.minus{background:#E8ECF5;color:var(--navy)}
+.yes-ctrl-btn.minus:hover{background:#d0d7ea}
+.yes-ctrl-btn.plus.intent{background:var(--navy);color:#fff}
+.yes-ctrl-btn.plus.intent:hover{background:var(--navy-l)}
+.yes-ctrl-btn.plus.positive{background:var(--green);color:#fff}
+.yes-ctrl-btn.plus.positive:hover{opacity:.85}
+.yes-big-num{font-family:'DM Mono',monospace;font-size:22px;font-weight:700;min-width:32px;text-align:center;line-height:1}
+.yes-big-num.intent{color:var(--navy)}
+.yes-big-num.positive{color:var(--green)}
+.yes-goal-bar{display:flex;align-items:center;gap:5px;margin-top:2px}
+.yes-goal-label{font-size:9px;color:var(--text-xs);flex-shrink:0}
+.yes-goal-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.yes-goal-fill{height:100%;border-radius:3px;transition:width .3s}
+.yes-goal-fill.intent{background:var(--navy)}
+.yes-goal-fill.positive{background:var(--green)}
+.yes-goal-pct{font-size:9px;font-weight:700;min-width:28px;text-align:right}
+.yes-goal-pct.intent{color:var(--navy)}
+.yes-goal-pct.positive{color:var(--green)}
+.yes-divider{border:none;border-top:1px dashed var(--border);margin:8px 0}
+.yes-total-row{display:flex;align-items:center;gap:6px}
+.yes-total-label{font-size:10px;font-weight:700;color:var(--text-xs)}
+.yes-total-big{font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--orange)}
+.yes-total-goal{font-size:10px;color:var(--text-xs);margin-left:2px}
+.yes-total-progress{flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden}
+.yes-total-fill{height:100%;border-radius:4px;background:var(--orange);transition:width .3s}
+/* alert banner */
+#yes-alert{display:none;margin-bottom:10px;border-radius:var(--radius-s);padding:9px 12px;font-size:11px;font-weight:700;line-height:1.5;border-left:4px solid}
+#yes-alert.alert-warn{display:block;background:#FFF8E1;border-left-color:var(--yellow);color:#7A5800}
+#yes-alert.alert-danger{display:block;background:#FFEBEE;border-left-color:var(--red);color:#B71C1C}
+#yes-alert.alert-good{display:block;background:#E8F5E9;border-left-color:var(--green);color:#1B5E20}
+.yes-alert-title{font-size:12px;font-weight:900;margin-bottom:2px}
+.yes-alert-body{font-size:10px;font-weight:400;opacity:.85}
+
+/* ---- 右カラム ---- */
+#col-guide{background:var(--bg-card);display:flex;flex-direction:column;overflow:hidden}
+#ice-flash{position:absolute;top:0;left:0;right:0;background:var(--orange);color:#fff;padding:9px 14px;font-size:12px;line-height:1.6;font-weight:500;transform:translateY(-100%);opacity:0;transition:all .25s;z-index:10;border-bottom:2px solid var(--orange-l)}
+#ice-flash.show{transform:translateY(0);opacity:1}
+#guide-step-head{flex-shrink:0;background:var(--navy);color:#fff;padding:12px 14px 10px;border-bottom:3px solid var(--orange)}
+#guide-step-head.bridge-head{border-bottom-color:var(--purple-l)}
+#guide-step-num{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;color:rgba(255,255,255,.5);letter-spacing:.1em;margin-bottom:2px}
+#guide-step-title{font-size:15px;font-weight:900}
+#guide-step-sub{font-size:11px;color:rgba(255,255,255,.6);margin-top:3px}
+.guide-goal{background:rgba(255,255,255,.08);border-left:3px solid var(--orange-l);padding:6px 10px;margin:8px 0 0;font-size:11px;color:rgba(255,255,255,.85);line-height:1.5}
+
+/* 職業別バッジ */
+#job-badge{flex-shrink:0;padding:6px 14px;font-size:11px;font-weight:700;background:var(--teal-bg);color:var(--teal);border-bottom:2px solid var(--teal-l);display:none;align-items:center;gap:6px}
+#job-badge.show{display:flex}
+
+/* bridge confirm */
+#bridge-confirm{flex-shrink:0;background:var(--purple-bg);border-bottom:3px solid var(--purple-l);padding:0 14px;max-height:0;overflow:hidden;opacity:0;transition:max-height .35s,opacity .35s,padding .35s}
+#bridge-confirm.show{max-height:200px;opacity:1;padding:10px;overflow-y:auto}
+.bc-title{font-size:13px;font-weight:900;color:var(--purple);margin-bottom:10px}
+.bc-step{background:#fff;border:1.5px solid var(--purple-l);border-radius:var(--radius-s);padding:10px 12px;margin-bottom:8px}
+.bc-step-label{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--purple);text-transform:uppercase;margin-bottom:6px;display:block}
+.bc-talk{font-size:12px;line-height:1.6;background:var(--purple-bg);border-left:3px solid var(--purple);padding:6px 10px;border-radius:0 4px 4px 0;margin-bottom:4px;font-weight:700}
+.bc-note{font-size:11px;color:var(--purple);padding:3px 0 0 6px;border-left:2px solid var(--purple-l);line-height:1.5}
+.bc-result-btns{display:flex;gap:6px;margin-top:10px}
+.bc-btn{font-family:'Noto Sans JP',sans-serif;font-size:11px;font-weight:700;padding:7px 10px;border-radius:var(--radius-s);border:none;cursor:pointer;flex:1}
+.bc-btn.yes{background:var(--green);color:#fff}.bc-btn.next-appo{background:var(--purple);color:#fff}.bc-btn.no{background:var(--red);color:#fff}
+
+/* needs weak */
+#needs-weak-banner{flex-shrink:0;background:var(--yellow-bg);border-bottom:2px solid var(--yellow-border);color:var(--yellow);padding:0 14px;max-height:0;overflow:hidden;opacity:0;transition:max-height .3s,opacity .3s,padding .3s}
+#needs-weak-banner.show{max-height:120px;opacity:1;padding:8px 14px}
+#needs-weak-banner .nwb-title{font-size:11px;font-weight:900;margin-bottom:3px;display:block}
+#needs-weak-banner .nwb-line{font-size:10px;line-height:1.6}
+#nwb-close{float:right;background:rgba(180,83,9,.15);border:none;color:var(--yellow);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;cursor:pointer}
+
+/* attr flash */
+#attr-flash{flex-shrink:0;background:var(--teal);color:#fff;padding:0 14px;max-height:0;overflow:hidden;opacity:0;transition:max-height .3s,opacity .3s,padding .3s;border-bottom:2px solid var(--teal-l)}
+#attr-flash.show{max-height:260px;opacity:1;padding:10px 14px}
+#attr-flash .af-label{font-size:9px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,.7);text-transform:uppercase;margin-bottom:6px;display:block}
+#attr-flash .af-line{padding:3px 0;border-bottom:1px solid rgba(255,255,255,.15);font-size:11px;line-height:1.6}
+#attr-flash .af-line:last-child{border-bottom:none}
+#attr-flash-close{float:right;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;cursor:pointer;margin-bottom:4px}
+
+#guide-body{flex:1;overflow-y:auto;padding:12px 14px;min-height:0}
+.guide-block{margin-bottom:14px}
+.guide-block-label{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--text-xs);text-transform:uppercase;margin-bottom:6px}
+.talk-line{background:#F0F4FC;border-left:3px solid var(--navy-ll);border-radius:0 var(--radius-s) var(--radius-s) 0;padding:7px 10px;font-size:12px;line-height:1.7;color:var(--text);margin-bottom:5px}
+.talk-line.highlight{background:#FFF0E0;border-left-color:var(--orange);font-weight:700}
+.talk-line.key-talk{background:#E8F8EE;border-left-color:var(--green)}
+.talk-line.warn-talk{background:var(--yellow-bg);border-left-color:var(--yellow);font-weight:700}
+.talk-line.purple-talk{background:var(--purple-bg);border-left-color:var(--purple);font-weight:700}
+.talk-line.job-talk{background:#E0F7FA;border-left-color:var(--teal);font-style:italic}
+.guide-note{font-size:11px;color:var(--text-s);padding:4px 0 0 8px;border-left:2px solid var(--border);margin-bottom:8px;line-height:1.5}
+.guide-note.warn{border-left-color:var(--orange);color:var(--orange)}
+.guide-note.good{border-left-color:var(--green);color:var(--green)}
+.guide-note.bad{border-left-color:var(--red);color:var(--red)}
+.guide-note.yellow{border-left-color:var(--yellow);color:var(--yellow)}
+.guide-note.purple{border-left-color:var(--purple);color:var(--purple)}
+.guide-note.teal{border-left-color:var(--teal);color:var(--teal)}
+/* YES取りポイント */
+.yes-check-block{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,#E8F5E9 0%,#F0FFF4 100%);border:1.5px solid var(--green);border-radius:var(--radius-s);padding:7px 10px;margin-bottom:6px}
+.yes-check-label{font-size:10px;font-weight:700;color:var(--green);flex:1;line-height:1.4}
+.yes-check-label .yck-type{font-size:8px;font-weight:700;padding:1px 5px;border-radius:10px;margin-right:4px;display:inline-block;vertical-align:middle}
+.yes-check-label .yck-type.intent{background:var(--navy);color:#fff}
+.yes-check-label .yck-type.positive{background:var(--green);color:#fff}
+.yes-check-btns{display:flex;gap:4px;flex-shrink:0}
+.ycb-btn{font-family:'Noto Sans JP',sans-serif;font-size:10px;font-weight:700;padding:4px 9px;border-radius:20px;border:none;cursor:pointer;transition:all .12s;line-height:1}
+.ycb-btn.intent{background:var(--navy);color:#fff}
+.ycb-btn.intent:hover{background:var(--navy-l)}
+.ycb-btn.positive{background:var(--green);color:#fff}
+.ycb-btn.positive:hover{opacity:.85}
+.ycb-btn.minus{background:#E8ECF5;color:var(--navy);font-size:11px}
+.ycb-btn.minus:hover{background:#d0d7ea}
+#guide-nav{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:8px 14px;border-top:1px solid var(--border);background:var(--bg)}
+.nav-btn{font-family:'Noto Sans JP',sans-serif;font-size:11px;font-weight:700;padding:6px 14px;border-radius:var(--radius-s);border:1.5px solid var(--border);background:var(--bg-card);color:var(--text);cursor:pointer;transition:all .15s}
+.nav-btn:hover{border-color:var(--navy-l);color:var(--navy)}
+.nav-btn:disabled{opacity:.35;cursor:default}
+.nav-btn.primary{background:var(--navy);border-color:var(--navy);color:#fff;flex:1}
+.nav-btn.primary:hover{background:var(--navy-l)}
+#nav-label{flex:1;font-size:10px;font-weight:700;color:var(--text-xs);text-align:center}
+#notif{position:fixed;top:56px;right:12px;background:var(--navy);color:#fff;border-radius:var(--radius);padding:8px 14px;font-size:11px;font-weight:500;box-shadow:var(--shadow-m);transform:translateY(-8px);opacity:0;transition:all .2s;pointer-events:none;z-index:100;border-left:3px solid var(--orange)}
+/* クライアント情報入力エリア */
+#client-info-box{background:#F8F9FF;border:1.5px solid var(--border);border-radius:var(--radius-s);padding:10px 12px;margin-bottom:10px}
+#client-info-box .ci-title{font-size:9px;font-weight:700;color:var(--text-xs);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between}
+.ci-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.ci-row:last-child{margin-bottom:0}
+.ci-label{font-size:9px;font-weight:700;color:var(--text-xs);width:40px;flex-shrink:0}
+.ci-input{flex:1;font-family:'Noto Sans JP',sans-serif;font-size:12px;padding:4px 8px;border:1.5px solid var(--border);border-radius:4px;background:#fff;color:var(--text);outline:none}
+.ci-input:focus{border-color:var(--navy-l)}
+/* 結果記録ボタン */
+#result-bar{display:flex;gap:5px;margin-bottom:10px}
+.result-btn{flex:1;font-family:'Noto Sans JP',sans-serif;font-size:10px;font-weight:700;padding:7px 4px;border-radius:var(--radius-s);border:1.5px solid var(--border);background:#fff;cursor:pointer;text-align:center;transition:all .15s;line-height:1.3}
+.result-btn .rb-icon{font-size:14px;display:block;margin-bottom:2px}
+.result-btn:hover{border-color:var(--navy-l)}
+.result-btn.active-won{background:#E8F5E9;border-color:var(--green);color:#2E7D32}
+.result-btn.active-pending{background:#FFF8E1;border-color:var(--yellow);color:#7A5800}
+.result-btn.active-cut{background:#F3E5F5;border-color:#9C27B0;color:#6A1B9A}
+.result-btn.active-bridge{background:#E8EAF6;border-color:#3F51B5;color:#283593}
+.result-btn.active-lost{background:#FFEBEE;border-color:var(--red);color:#C62828}
+.result-btn.active-money{background:#FFF3E0;border-color:#FF6F00;color:#E65100}
+/* hp card result classes for bridge/money */
+.hp-card-result.bridge{background:#E8EAF6;color:#283593}
+.hp-card-result.money{background:#FFF3E0;color:#E65100}
+.hp-stat-num.bridge{color:#3F51B5}.hp-stat-num.money{color:#FF6F00}
+/* ブリッジ後結果 */
+.br-result-select{font-family:'Noto Sans JP',sans-serif;font-size:11px;padding:3px 6px;border:1.5px solid var(--border);border-radius:4px;background:#fff;cursor:pointer;color:var(--text)}
+.br-result-select:focus{outline:none;border-color:var(--navy-l)}
+.br-tag{font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;display:inline-block}
+.br-tag.br-pre{background:#F3F4F6;color:#6B7280}
+.br-tag.br-won{background:#E8F5E9;color:#2E7D32}
+.br-tag.br-lost{background:#FFEBEE;color:#C62828}
+.br-tag.br-jump{background:#FFF3E0;color:#E65100}
+.br-tag.br-followup{background:#E8EAF6;color:#283593}
+/* 保存ボタン */
+#save-btn{width:100%;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;padding:8px;border-radius:var(--radius-s);border:none;background:var(--navy);color:#fff;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
+#save-btn:hover{opacity:.85}
+#save-btn:disabled{opacity:.4;cursor:default}
+/* 履歴ページ */
+#history-page{display:none;position:fixed;inset:0;background:var(--bg);z-index:200;overflow:hidden;flex-direction:column}
+#history-page.open{display:flex}
+#hp-header{background:var(--navy);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+#hp-title{font-size:15px;font-weight:900;flex:1}
+#hp-close{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:13px;font-weight:700;padding:5px 12px;border-radius:var(--radius-s);cursor:pointer}
+#hp-body{flex:1;overflow-y:auto;padding:12px 16px}
+#hp-stats{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.hp-stat{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-s);padding:8px 12px;text-align:center;min-width:70px;flex:1}
+.hp-stat-num{font-family:'DM Mono',monospace;font-size:20px;font-weight:700}
+.hp-stat-num.won{color:var(--green)}.hp-stat-num.pending{color:var(--yellow)}.hp-stat-num.cut{color:#9C27B0}.hp-stat-num.bridge{color:#3F51B5}.hp-stat-num.lost{color:var(--red)}.hp-stat-num.money{color:#FF6F00}.hp-stat-num.rate{color:var(--orange)}
+.hp-stat-label{font-size:9px;color:var(--text-xs);font-weight:700;margin-top:2px}
+.hp-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-s);padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.hp-card:hover{border-color:var(--navy-l)}
+.hp-card-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.hp-card-result{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;flex-shrink:0}
+.hp-card-result.won{background:#E8F5E9;color:#2E7D32}
+.hp-card-result.lost{background:#FFEBEE;color:#C62828}
+.hp-card-result.pending{background:#FFF8E1;color:#7A5800}
+.hp-card-result.cut{background:#F3E5F5;color:#6A1B9A}
+.hp-card-name{font-size:13px;font-weight:700;flex:1}
+.hp-card-date{font-size:10px;color:var(--text-xs);flex-shrink:0}
+.hp-card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px}
+.hp-tag{font-size:9px;padding:1px 6px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:var(--text-s)}
+.hp-yes-row{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text-xs)}
+.hp-yes-num{font-family:'DM Mono',monospace;font-weight:700;font-size:12px}
+.hp-yes-num.intent{color:var(--navy)}.hp-yes-num.positive{color:var(--green)}
+/* 詳細モーダル */
+#hp-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:16px}
+#hp-modal.open{display:flex}
+#hp-modal-inner{background:#fff;border-radius:var(--radius);width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:16px}
+#hp-modal-close{float:right;background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-xs);margin-top:-4px}
+.hm-section{font-size:9px;font-weight:700;color:var(--text-xs);text-transform:uppercase;letter-spacing:.08em;margin:12px 0 5px;border-top:1px solid var(--border);padding-top:8px}
+.hm-row{display:flex;gap:8px;margin-bottom:4px;font-size:11px}
+.hm-label{color:var(--text-xs);font-weight:700;width:70px;flex-shrink:0}
+.hm-val{flex:1;line-height:1.5}
+#hp-empty{text-align:center;padding:40px 20px;color:var(--text-xs);font-size:13px}
+/* 履歴ボタン */
+#history-open-btn{font-family:'Noto Sans JP',sans-serif;font-size:11px;font-weight:700;padding:4px 10px;border-radius:var(--radius-s);border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);cursor:pointer;color:#fff;transition:all .15s;white-space:nowrap}
+#history-open-btn:hover{background:rgba(255,255,255,.22)}
+#notif.show{transform:translateY(0);opacity:1}
+
+</style>
+<script id="v14-html-tmpl" type="text/x-template">
+
+<div id="main">
+  <!-- 左：キーワード -->
+  <div class="panel" id="col-keys">
+    <div class="panel-head"><div class="dot" style="background:var(--orange)"></div>キーワードタップ</div>
+    <div class="panel-body" id="keys-body"></div>
+  </div>
+  <!-- 中：トークスクリプト -->
+<div class="panel" id="col-guide">
+    <div id="ice-flash"></div>
+    <div id="guide-step-head">
+      <div id="guide-step-num"></div>
+      <div id="guide-step-title"></div>
+      <div id="guide-step-sub"></div>
+      <div class="guide-goal" id="guide-goal"></div>
+    </div>
+    <div id="job-badge">🎯 <span id="job-badge-text"></span>向けトーク表示中</div>
+    <div id="bridge-confirm">
+      <div class="bc-title">🔗 ブリッジ確認 — ここで一度止める</div>
+      <div class="bc-step">
+        <span class="bc-step-label">STEP 1 ／ Web業界への興味確認</span>
+        <div class="bc-talk">「ここまでお話してきて、Web業界で働くっていうのはどう思いましたか？なんかイメージ湧きましたか？」</div>
+        <div class="bc-note">→ YESを引き出してから次へ。「まだよくわからない」なら業界教育を深掘りして戻る</div>
+      </div>
+      <div class="bc-step">
+        <span class="bc-step-label">STEP 2 ／ スクールの闇の共有</span>
+        <div class="bc-talk">「実はWebデザインを学ぶスクール自体にも闇があって、卒業しても仕事ができないままの人が世の中にめちゃくちゃ多いんですよ。」</div>
+        <div class="bc-note">→ 「え、そうなんですか？」を引き出す</div>
+      </div>
+      <div class="bc-step">
+        <span class="bc-step-label">STEP 3 ／ 次回アポ or バトンタッチ</span>
+        <div class="bc-talk">「それを解決してる可能性があるスクールがあって、詳しい話を聞いてみたいですか？」</div>
+        <div class="bc-note">→ YES → 次回アポ設定 or その場で先輩にバトンタッチ</div>
+      </div>
+      <div class="bc-result-btns">
+        <button class="bc-btn yes" onclick="bridgeResult('appo')">📅 次回アポ</button>
+        <button class="bc-btn next-appo" onclick="bridgeResult('handoff')">🤝 バトンタッチ</button>
+        <button class="bc-btn no" onclick="bridgeResult('ng')">❌ NG</button>
+      </div>
+    </div>
+    <div id="needs-weak-banner">
+      <button id="nwb-close" onclick="closeNeedsWeakBanner()">✕</button>
+      <span class="nwb-title">⚠️ ニーズ薄 / ビジョン未定フラグ</span>
+      <div class="nwb-line">📌 「今日来た本当の理由は？」と掘り直す</div>
+      <div class="nwb-line">📌 「今の状況が続いたら5年後どうなりそう？」で自分ゴト化</div>
+    </div>
+    <div id="attr-flash">
+      <button id="attr-flash-close" onclick="closeAttrFlash()">✕ 閉じる</button>
+      <span class="af-label" id="af-label"></span>
+      <div id="af-lines"></div>
+    </div>
+    <div class="panel-body" id="guide-body"></div>
+    <div id="guide-nav">
+      <button class="nav-btn" id="nav-prev" onclick="prev()">◀ 前へ</button>
+      <span id="nav-label"></span>
+      <button class="nav-btn primary" id="nav-next" onclick="next()">次へ ▶</button>
+    </div>
+  </div>
+  <!-- 右：ヒアリングシート -->
+<div class="panel" id="col-sheet">
+    <div class="panel-head"><div class="dot" style="background:var(--navy-l)"></div>ヒアリングシート</div>
+    <div class="panel-body">
+      <!-- クライアント情報 -->
+      <div id="client-info-box">
+        <div class="ci-title">
+          クライアント情報
+        </div>
+        <div class="ci-row">
+          <span class="ci-label">LINE名</span>
+          <input class="ci-input" id="ci-name" type="text" placeholder="山田 太郎" oninput="onClientInput()">
+        </div>
+        <div class="ci-row">
+          <span class="ci-label">日時</span>
+          <input class="ci-input" id="ci-datetime" type="datetime-local" oninput="onClientInput()">
+        </div>
+      </div>
+      <!-- 商談結果 -->
+      <div id="result-bar" style="flex-wrap:wrap">
+        <button class="result-btn" id="rb-won"     onclick="setResult('won')"    ><span class="rb-icon">🎉</span>成約</button>
+        <button class="result-btn" id="rb-pending" onclick="setResult('pending')"><span class="rb-icon">⏳</span>保留</button>
+        <button class="result-btn" id="rb-cut"     onclick="setResult('cut')"    ><span class="rb-icon">✂️</span>見切り</button>
+        <button class="result-btn" id="rb-bridge"  onclick="setResult('bridge')" ><span class="rb-icon">🔗</span>ブリッジ</button>
+        <button class="result-btn" id="rb-lost"    onclick="setResult('lost')"   ><span class="rb-icon">❌</span>失注</button>
+        <button class="result-btn" id="rb-money"   onclick="setResult('money')"  ><span class="rb-icon">💸</span>資金繰り不可</button>
+      </div>
+      <!-- 保存 -->
+      <button id="save-btn" onclick="saveRecord()" disabled>💾 この商談を記録する</button>
+      <!-- 履歴 -->
+      <div id="yes-alert"></div>
+      <div id="yes-counter">
+        <div class="yes-counter-title">
+          YES カウント
+          <span class="yes-c-sub" id="yes-mode-sub">目標：意図的10 / ポジ1以上</span>
+        </div>
+        <!-- 意図的YES -->
+        <div class="yes-row">
+          <span class="yes-type-pill intent">🎯 意図的YES</span>
+          <div class="yes-controls">
+            <button class="yes-ctrl-btn minus" onclick="addYes('intent',-1)" title="−1">－</button>
+            <span class="yes-big-num intent" id="yes-num-intent">0</span>
+            <button class="yes-ctrl-btn plus intent" onclick="addYes('intent',1)" title="+1">＋</button>
+          </div>
+        </div>
+        <div class="yes-goal-bar">
+          <span class="yes-goal-label" id="yes-label-intent">目標10</span>
+          <div class="yes-goal-track"><div class="yes-goal-fill intent" id="yes-fill-intent" style="width:0%"></div></div>
+          <span class="yes-goal-pct intent" id="yes-pct-intent">0%</span>
+        </div>
+        <!-- ポジティブ反応 -->
+        <div class="yes-row" style="margin-top:8px">
+          <span class="yes-type-pill positive">✨ ポジティブ反応</span>
+          <div class="yes-controls">
+            <button class="yes-ctrl-btn minus" onclick="addYes('positive',-1)" title="−1">－</button>
+            <span class="yes-big-num positive" id="yes-num-positive">0</span>
+            <button class="yes-ctrl-btn plus positive" onclick="addYes('positive',1)" title="+1">＋</button>
+          </div>
+        </div>
+        <div class="yes-goal-bar">
+          <span class="yes-goal-label" id="yes-label-positive">目標1</span>
+          <div class="yes-goal-track"><div class="yes-goal-fill positive" id="yes-fill-positive" style="width:0%"></div></div>
+          <span class="yes-goal-pct positive" id="yes-pct-positive">0%</span>
+        </div>
+        <hr class="yes-divider">
+        <!-- 合計 -->
+        <div class="yes-total-row">
+          <span class="yes-total-label">合計</span>
+          <span class="yes-total-big" id="yes-num-total">0</span>
+          <span class="yes-total-goal" id="yes-label-total">/ 目標11</span>
+          <div class="yes-total-progress"><div class="yes-total-fill" id="yes-fill-total" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div id="sheet-body"></div>
+    </div>
+  </div>
+</div>
+</script>
+<script>
+// ============================================================
+// SUPABASE 設定
+// ============================================================
+const SUPABASE_URL = 'https://vpnqazoorznunhyorxoj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Cd5v0WcHah7eiVqlyk2wXA_TlkwFCgl';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const ADMIN_PASSWORD = 'webski2024admin'; // 管理者画面パスワード（変更可）
+
+// ============================================================
+// 状態管理
+// ============================================================
+let currentUser = null;
+let currentProfile = null;
+let selectedStaff = null; // {id, name}
+
+let appNotifTimer = null;
+
+// ============================================================
+// ユーティリティ
+// ============================================================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showLoading(on) {
+  document.getElementById('loading-overlay').classList.toggle('show', on);
+}
+
+function appNotif(title, body = '') {
+  const el = document.getElementById('app-notif');
+  el.innerHTML = `<strong>${title}</strong>${body ? ' — ' + body : ''}`;
+  el.classList.add('show');
+  clearTimeout(appNotifTimer);
+  appNotifTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ============================================================
+// 認証
+// ============================================================
+async function initApp() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    await onLoggedIn(session.user);
+  } else {
+    showLoading(false);
+    showPage('page-login');
+  }
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-password').value;
+  const btn = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (!email || !pw) { errEl.textContent = 'メールアドレスとパスワードを入力してください'; return; }
+  btn.disabled = true;
+  btn.textContent = 'ログイン中...';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if (error) {
+    errEl.textContent = 'メールアドレスまたはパスワードが正しくありません';
+    btn.disabled = false;
+    btn.textContent = 'ログイン';
+    return;
+  }
+  await onLoggedIn(data.user);
+}
+
+async function onLoggedIn(user) {
+  showLoading(true);
+  currentUser = user;
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  currentProfile = profile;
+  document.getElementById('nav-user-name').textContent = profile?.name || user.email;
+  document.getElementById('top-user-name').textContent = (profile?.name || user.email) + ' さん';
+  showLoading(false);
+  showPage('page-top');
+}
+
+async function doLogout() {
+  if (!confirm('ログアウトしますか？')) return;
+  await sb.auth.signOut();
+  currentUser = null; currentProfile = null; selectedStaff = null;
+  showPage('page-login');
+}
+
+// ============================================================
+// ナビゲーション
+// ============================================================
+function goTop() { showPage('page-top'); }
+
+async function goStaffSelect() {
+  showPage('page-staff');
+  showLoading(true);
+  const { data: profiles } = await sb.from('profiles').select('*').order('name');
+  showLoading(false);
+  const grid = document.getElementById('staff-grid');
+  grid.innerHTML = (profiles || []).map(p => `
+    <button class="staff-card" onclick="selectStaff('${p.id}','${p.name.replace(/'/g,"\\'")}')">
+      <div class="sc-avatar">${p.name.charAt(0)}</div>
+      <div class="sc-name">${p.name}</div>
+      <div class="sc-role">${p.role === 'admin' ? '管理者' : 'スタッフ'}</div>
+    </button>
+  `).join('');
+}
+
+function selectStaff(id, name) {
+  selectedStaff = { id, name };
+  // Init FIRST (inserts DOM), then show page
+  try {
+    initScriptPage();
+  } catch(e) {
+    console.error('initScriptPage error:', e);
+    alert('スクリプト読み込みエラー: ' + e.message);
+    return;
+  }
+  document.getElementById('script-staff-label').textContent = name;
+  showPage('page-script');
+}
+
+function openHistoryPage() {
+  goRecords();
+}
+
+async function goRecords() {
+  showPage('page-records');
+  const { data: profiles } = await sb.from('profiles').select('id,name').order('name');
+  window._profilesCache = profiles || []; // キャッシュ
+  const sel = document.getElementById('rf-staff');
+  sel.innerHTML = '<option value="">全員</option>' + (profiles||[]).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  const sel2 = document.getElementById('stats-staff');
+  sel2.innerHTML = '<option value="">全スタッフ</option>' + (profiles||[]).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  loadRecords();
+}
+
+// ============================================================
+// 商談一覧
+// ============================================================
+const RESULT_CONF = {
+  won:{label:'成約',icon:'🎉',cls:'rc-won'}, pending:{label:'保留',icon:'⏳',cls:'rc-pending'},
+  cut:{label:'見切り',icon:'✂️',cls:'rc-cut'}, bridge:{label:'ブリッジ',icon:'🔗',cls:'rc-bridge'},
+  lost:{label:'失注',icon:'❌',cls:'rc-lost'}, money:{label:'資金不可',icon:'💸',cls:'rc-money'}
+};
+const BRIDGE_RESULT_CONF = {
+  pre:{label:'商談前',icon:'📅',cls:'br-pre'}, won:{label:'成約',icon:'🎉',cls:'br-won'},
+  lost:{label:'失注',icon:'❌',cls:'br-lost'}, jump:{label:'プレ飛び',icon:'🏃',cls:'br-jump'},
+  followup:{label:'後追い',icon:'📞',cls:'br-followup'}
+};
+
+async function loadRecords() {
+  showLoading(true);
+  let q = sb.from('records').select('*').order('saved_at', { ascending: false });
+  const staffEl = document.getElementById('rf-staff');
+  const resultEl = document.getElementById('rf-result');
+  const modeEl = document.getElementById('rf-mode');
+  const staff = staffEl ? staffEl.value : '';
+  const result = resultEl ? resultEl.value : '';
+  const modeVal = modeEl ? modeEl.value : '';
+  if (staff) q = q.eq('user_id', staff);
+  if (result) q = q.eq('result', result);
+  if (modeVal) q = q.eq('mode', modeVal);
+  const { data: records, error } = await q;
+  showLoading(false);
+  if (error) { console.error('loadRecords error:', error); return; }
+  renderRecordsList(records || []);
+}
+
+function renderRecordsList(records) {
+  // 統計
+  const cnt = {won:0,pending:0,cut:0,bridge:0,lost:0,money:0};
+  records.forEach(r => { if(cnt[r.result] !== undefined) cnt[r.result]++; });
+  const rate = records.length > 0 ? Math.round(cnt.won / records.length * 100) : 0;
+  document.getElementById('rec-stats').innerHTML = Object.entries(cnt).map(([k,v]) => {
+    const rc = RESULT_CONF[k];
+    return `<div class="rec-stat"><div class="rec-stat-num" style="color:${k==='won'?'#2E7D32':k==='lost'?'#C62828':k==='bridge'?'#283593':k==='money'?'#E65100':k==='cut'?'#6A1B9A':'#7A5800'}">${v}</div><div class="rec-stat-label">${rc.icon} ${rc.label}</div></div>`;
+  }).join('') + `<div class="rec-stat"><div class="rec-stat-num" style="color:var(--orange)">${rate}%</div><div class="rec-stat-label">成約率</div></div>`;
+
+  const listEl = document.getElementById('rec-list');
+  const emptyEl = document.getElementById('rec-empty');
+  if (!records.length) { listEl.innerHTML = ''; emptyEl.style.display = 'block'; return; }
+  emptyEl.style.display = 'none';
+
+  const iceTempMap = {cold:'🧊',warm:'😊',hot:'😂'};
+  listEl.innerHTML = records.map(r => {
+    const rc = RESULT_CONF[r.result] || {label:r.result,icon:'?',cls:'rc-pending'};
+    const dtStr = r.datetime ? r.datetime.replace('T',' ').slice(0,16) : '';
+    const staffName = (window._profilesCache||[]).find(p=>p.id===r.staff_id||p.id===r.user_id)?.name||'';
+    const iceIcon = r.ice_temp ? iceTempMap[r.ice_temp] : '';
+    const tags = [];
+    if (r.age) tags.push(r.age + '歳');
+    if (r.selected_job) tags.push(r.selected_job);
+    if (r.income && r.income.length) tags.push(r.income[0]);
+    if (r.mode) tags.push(r.mode === 'bridge' ? '🔗ブリッジ' : '⚡クローザー');
+    const tagHtml = tags.map(t => `<span class="rec-tag">${t}</span>`).join('');
+    // ブリッジ後select
+    let brRow = '';
+    if (r.result === 'bridge' || r.mode === 'bridge') {
+      const brRes = r.bridge_result || 'pre';
+      const brc = BRIDGE_RESULT_CONF[brRes];
+      const opts = Object.entries(BRIDGE_RESULT_CONF).map(([v,bc]) =>
+        `<option value="${v}"${brRes===v?' selected':''}>${bc.icon} ${bc.label}</option>`).join('');
+      brRow = `<div class="br-row"><span>ブリッジ後：</span><span class="br-badge ${brc.cls}">${brc.icon} ${brc.label}</span><select class="br-select" onchange="updateBridgeResult('${r.id}',this.value)" onclick="event.stopPropagation()">${opts}</select></div>`;
+    }
+    return `<div class="rec-card" onclick="openRecModal('${r.id}')">
+      <div class="rec-card-top">
+        <span class="rec-result-badge ${rc.cls}">${rc.icon} ${rc.label}</span>
+        <span class="rec-card-name">${r.client_name}${iceIcon ? ' '+iceIcon : ''}</span>
+        <span class="rec-card-date">${dtStr}</span>
+      </div>
+      ${staffName ? `<div class="rec-card-staff">担当：${staffName}</div>` : ''}
+      <div class="rec-tags">${tagHtml}</div>
+      <div class="rec-yes">🎯 意図的 <span class="rec-yes-n" style="color:var(--navy)">${r.yes_intent}</span>　✨ ポジ <span class="rec-yes-n" style="color:var(--green)">${r.yes_positive}</span>　合計 <span class="rec-yes-n" style="color:var(--orange)">${r.yes_total}</span></div>
+      ${brRow}
+    </div>`;
+  }).join('');
+}
+
+async function updateBridgeResult(id, val) {
+  await sb.from('records').update({ bridge_result: val }).eq('id', id);
+  const brc = BRIDGE_RESULT_CONF[val];
+  appNotif(brc.icon + ' 更新', brc.label);
+}
+
+async function openRecModal(id) {
+  if (!window._profilesCache) {
+    const { data: profiles } = await sb.from('profiles').select('id,name');
+    window._profilesCache = profiles || [];
+  }
+  const { data: r } = await sb.from('records').select('*').eq('id', id).single();
+  if (!r) return;
+  const rc = RESULT_CONF[r.result] || {label:r.result,icon:'?',cls:'rc-pending'};
+  const dtStr = r.datetime ? r.datetime.replace('T',' ') : '';
+  const iceTempMap = {cold:'🧊 まだ固い',warm:'😊 雰囲気和んだ',hot:'😂 笑い取れた'};
+  function row(label, val) { return val ? `<div class="rm-row"><span class="rm-label">${label}</span><span class="rm-val">${val}</span></div>` : ''; }
+  function tags(arr) { return arr && arr.length ? arr.join('・') : '—'; }
+  const ICE_KEYS = [
+    {val:'name_unique',text:'名前が珍しい'},{val:'name_easy',text:'名前が呼びやすい'},
+    {val:'look_similar',text:'髪型・服装が似てる'},{val:'look_calm',text:'雰囲気がいい'},
+    {val:'look_style',text:'おしゃれ・センスがある'},{val:'room_nice',text:'部屋がきれい'},
+    {val:'room_cafe',text:'カフェ・外出先から'},{val:'room_work',text:'職場から'},
+    {val:'item_pc',text:'Mac・いいPC'},{val:'item_earphone',text:'イヤホン・ヘッドホン'},
+    {val:'item_car',text:'車のキーが見える'},{val:'face_nervous',text:'少し緊張してる'},
+    {val:'face_smile',text:'笑顔・明るい雰囲気'}
+  ];
+  const iceKey = r.ice ? ICE_KEYS.find(k => k.val === r.ice) : null;
+  const iceLabel = iceKey ? iceKey.text + (r.ice_temp ? ' / ' + iceTempMap[r.ice_temp] : '') : '—';
+  const brRes = r.bridge_result || 'pre';
+  const brc = BRIDGE_RESULT_CONF[brRes];
+  const opts = Object.entries(BRIDGE_RESULT_CONF).map(([v,bc]) =>
+    `<option value="${v}"${brRes===v?' selected':''}>${bc.icon} ${bc.label}</option>`).join('');
+  const flags = r.flags || {};
+  const flagHtml = [
+    flags.needsWeak ? '<span class="rec-tag" style="background:#FFF8E1;color:#7A5800">⚠️ ニーズ薄</span>' : '',
+    flags.visionVague ? '<span class="rec-tag" style="background:#FFF8E1;color:#7A5800">⚠️ ビジョン未定</span>' : '',
+    flags.studyHard ? '<span class="rec-tag" style="background:#FFEBEE;color:#C62828">🚫 勉強困難</span>' : ''
+  ].filter(Boolean).join(' ') || '<span style="color:var(--text-xs)">なし</span>';
+
+  document.getElementById('rec-modal-body').innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span class="rec-result-badge ${rc.cls}">${rc.icon} ${rc.label}</span>
+      <span style="font-size:18px;font-weight:900">${r.client_name}</span>
+    </div>
+    <div style="font-size:11px;color:var(--text-xs);margin-bottom:4px">${dtStr} ／ ${r.mode==='bridge'?'🔗 ブリッジ':'⚡ クローザー'}</div>
+    <div style="font-size:11px;color:var(--text-xs);margin-bottom:12px">担当：${(window._profilesCache||[]).find(p=>p.id===r.staff_id||p.id===r.user_id)?.name||'—'}</div>
+    <div class="rm-section">YES カウント</div>
+    <div class="rm-row"><span class="rm-label">意図的YES</span><span class="rm-val" style="color:var(--navy);font-weight:700">${r.yes_intent}回</span></div>
+    <div class="rm-row"><span class="rm-label">ポジ反応</span><span class="rm-val" style="color:var(--green);font-weight:700">${r.yes_positive}回</span></div>
+    <div class="rm-row"><span class="rm-label">合計</span><span class="rm-val" style="color:var(--orange);font-weight:700">${r.yes_total}回</span></div>
+    <div class="rm-section">アイスブレイク</div>
+    ${row('掴んだネタ', iceLabel)}
+    <div class="rm-section">基本情報</div>
+    ${row('年齢', r.age ? r.age + '歳' : null)}
+    ${row('学歴', r.edu)}
+    ${row('職業', r.selected_job || tags(r.job))}
+    ${row('居住', tags(r.location))}
+    ${row('収入', tags(r.income))}
+    <div class="rm-section">動機・懸念</div>
+    ${row('理想・目標', tags(r.dream))}
+    ${row('懸念', tags(r.concern))}
+    <div class="rm-section">フラグ</div>
+    <div style="margin-bottom:10px">${flagHtml}</div>
+    ${(r.result==='bridge'||r.mode==='bridge') ? `
+    <div class="rm-section">ブリッジ後フォローアップ</div>
+    <div class="rm-row"><span class="rm-label">現状</span><span class="rm-val"><span class="br-badge ${brc.cls}" style="margin-right:6px">${brc.icon} ${brc.label}</span><select class="br-select" onchange="updateBridgeResult('${r.id}',this.value)">${opts}</select></span></div>
+    ` : ''}
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button class="rm-del-btn" onclick="deleteRecord('${r.id}')">🗑 削除</button>
+    </div>
+  `;
+  document.getElementById('rec-modal').classList.add('open');
+}
+
+function closeRecModal() { document.getElementById('rec-modal').classList.remove('open'); }
+
+async function deleteRecord(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  await sb.from('records').delete().eq('id', id);
+  closeRecModal();
+  loadRecords();
+  appNotif('🗑 削除しました');
+}
+
+// ============================================================
+// 管理者
+// ============================================================
+function openAdminPwModal() {
+  document.getElementById('admin-pw-input').value = '';
+  document.getElementById('admin-pw-error').textContent = '';
+  document.getElementById('admin-pw-modal').classList.add('open');
+  setTimeout(() => document.getElementById('admin-pw-input').focus(), 100);
+}
+function closeAdminPwModal() { document.getElementById('admin-pw-modal').classList.remove('open'); }
+
+function checkAdminPw() {
+  const pw = document.getElementById('admin-pw-input').value;
+  if (pw === ADMIN_PASSWORD) {
+    closeAdminPwModal();
+    goAdmin();
+  } else {
+    document.getElementById('admin-pw-error').textContent = 'パスワードが違います';
+  }
+}
+
+async function goAdmin() {
+  showPage('page-admin');
+  loadAdminUsers();
+}
+
+async function loadAdminUsers() {
+  const { data: profiles } = await sb.from('profiles').select('*').order('name');
+  const listEl = document.getElementById('admin-user-list');
+  listEl.innerHTML = (profiles || []).map(p => {
+    const lastLogin = p.last_login ? new Date(p.last_login).toLocaleString('ja-JP') : 'ログイン履歴なし';
+    return `<div class="admin-user-row">
+      <div class="admin-user-avatar">${p.name.charAt(0)}</div>
+      <div class="admin-user-info">
+        <div class="admin-user-name">${p.name}${p.role==='admin' ? ' <span style="font-size:9px;background:#F3E5F5;color:var(--purple);padding:1px 6px;border-radius:10px">管理者</span>' : ''}</div>
+        <div class="admin-user-meta">最終ログイン：${lastLogin}</div>
+      </div>
+      <div class="admin-user-actions">
+        <button class="au-btn reset" onclick="resetUserPw('${p.id}','${p.name.replace(/'/g,"\\'")}')">PW変更</button>
+        <button class="au-btn delete" onclick="deleteUser('${p.id}','${p.name.replace(/'/g,"\\'")}')">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addUser() {
+  const name = document.getElementById('new-user-name').value.trim();
+  const email = document.getElementById('new-user-email').value.trim();
+  const pw = document.getElementById('new-user-pw').value;
+  const role = document.getElementById('new-user-role').value;
+  const msgEl = document.getElementById('add-user-msg');
+  msgEl.style.color = 'var(--red)';
+  if (!name || !email || !pw) { msgEl.textContent = '全項目を入力してください'; return; }
+  if (pw.length < 8) { msgEl.textContent = 'パスワードは8文字以上'; return; }
+  msgEl.textContent = '追加中...';
+  msgEl.style.color = 'var(--text-xs)';
+  const { data, error } = await sb.auth.admin.createUser({
+    email, password: pw,
+    user_metadata: { name, role },
+    email_confirm: true
+  });
+  if (error) {
+    // fallback: use signUp
+    const { data: d2, error: e2 } = await sb.auth.signUp({ email, password: pw, options: { data: { name, role } } });
+    if (e2) { msgEl.style.color = 'var(--red)'; msgEl.textContent = 'エラー: ' + e2.message; return; }
+  }
+  msgEl.style.color = 'var(--green)';
+  msgEl.textContent = `${name} を追加しました！`;
+  document.getElementById('new-user-name').value = '';
+  document.getElementById('new-user-email').value = '';
+  document.getElementById('new-user-pw').value = '';
+  setTimeout(() => { msgEl.textContent = ''; loadAdminUsers(); }, 2000);
+}
+
+async function resetUserPw(id, name) {
+  const newPw = prompt(`${name} の新しいパスワードを入力してください（8文字以上）:`);
+  if (!newPw) return;
+  if (newPw.length < 8) { alert('8文字以上のパスワードを入力してください'); return; }
+  const { error } = await sb.auth.admin.updateUserById(id, { password: newPw });
+  if (error) { alert('変更に失敗しました: ' + error.message); return; }
+  appNotif('🔑 PW変更完了', name + 'さんのパスワードを変更しました');
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`${name} を削除しますか？\n※この操作は取り消せません。商談記録も削除されます。`)) return;
+  const { error } = await sb.auth.admin.deleteUser(id);
+  if (error) {
+    // Fallback: profileだけ削除
+    await sb.from('profiles').delete().eq('id', id);
+  }
+  appNotif('🗑 削除完了', name + 'を削除しました');
+  loadAdminUsers();
+}
+
+// ============================================================
+// 集計レポート
+// ============================================================
+async function runStats() {
+  const staffId = document.getElementById('stats-staff').value;
+  const from = document.getElementById('stats-from').value;
+  const to = document.getElementById('stats-to').value;
+  const checks = [...document.querySelectorAll('input[name="sc"]:checked')].map(c => c.value);
+  
+  let q = sb.from('records').select('*, profiles(name)').order('saved_at', { ascending: false });
+  if (staffId) q = q.eq('user_id', staffId);
+  if (from) q = q.gte('datetime', from);
+  if (to) q = q.lte('datetime', to + 'T23:59:59');
+  const { data: records } = await q;
+  if (!records) return;
+  
+  let html = '';
+  const cnt = {won:0,pending:0,cut:0,bridge:0,lost:0,money:0};
+  records.forEach(r => { if(cnt[r.result]!==undefined) cnt[r.result]++; });
+  const total = records.length;
+  const rate = total > 0 ? Math.round(cnt.won / total * 100) : 0;
+
+  // 総数バッジ
+  html += `<div style="font-size:11px;color:var(--text-xs);margin-bottom:10px">対象：<strong style="color:var(--text)">${total}件</strong></div>`;
+
+  if (checks.includes('results')) {
+    html += `<div style="font-size:11px;font-weight:700;color:var(--text-xs);margin-bottom:6px">結果内訳</div><div class="stats-card-grid">`;
+    Object.entries(cnt).forEach(([k,v]) => {
+      const rc = RESULT_CONF[k];
+      html += `<div class="stat-card"><div class="stat-card-num" style="color:${k==='won'?'#2E7D32':k==='lost'?'#C62828':k==='bridge'?'#283593':k==='money'?'#E65100':k==='cut'?'#6A1B9A':'#7A5800'}">${v}</div><div class="stat-card-label">${rc.icon} ${rc.label}</div></div>`;
+    });
+    html += `</div>`;
+  }
+  if (checks.includes('rate')) {
+    html += `<div style="font-size:11px;font-weight:700;color:var(--text-xs);margin-bottom:6px">成約率</div><div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:var(--orange);margin-bottom:12px">${rate}%</div>`;
+  }
+  if (checks.includes('yes') && total > 0) {
+    const avgI = Math.round(records.reduce((s,r) => s+r.yes_intent,0)/total*10)/10;
+    const avgP = Math.round(records.reduce((s,r) => s+r.yes_positive,0)/total*10)/10;
+    const avgT = Math.round(records.reduce((s,r) => s+r.yes_total,0)/total*10)/10;
+    html += `<div style="font-size:11px;font-weight:700;color:var(--text-xs);margin-bottom:6px">YES平均（全商談）</div><div class="stats-card-grid">
+      <div class="stat-card"><div class="stat-card-num" style="color:var(--navy)">${avgI}</div><div class="stat-card-label">🎯 意図的</div></div>
+      <div class="stat-card"><div class="stat-card-num" style="color:var(--green)">${avgP}</div><div class="stat-card-label">✨ ポジ</div></div>
+      <div class="stat-card"><div class="stat-card-num" style="color:var(--orange)">${avgT}</div><div class="stat-card-label">合計</div></div>
+    </div>`;
+    // 成約 vs 失注
+    const won = records.filter(r => r.result === 'won');
+    const lost = records.filter(r => r.result === 'lost');
+    if (won.length && lost.length) {
+      const wonAvgP = Math.round(won.reduce((s,r) => s+r.yes_positive,0)/won.length*10)/10;
+      const lostAvgP = Math.round(lost.reduce((s,r) => s+r.yes_positive,0)/lost.length*10)/10;
+      html += `<div style="font-size:10px;color:var(--text-xs);margin-bottom:10px">成約ポジ平均：<strong style="color:var(--green)">${wonAvgP}</strong>回　失注ポジ平均：<strong style="color:var(--red)">${lostAvgP}</strong>回</div>`;
+    }
+  }
+  if (checks.includes('ice')) {
+    const iceCnt = {};
+    records.forEach(r => { if(r.ice) iceCnt[r.ice] = (iceCnt[r.ice]||0)+1; });
+    const sorted = Object.entries(iceCnt).sort((a,b) => b[1]-a[1]).slice(0,5);
+    if (sorted.length) {
+      const ICE_LABELS = {name_unique:'名前が珍しい',name_easy:'名前が呼びやすい',look_similar:'髪型・服装が似てる',look_calm:'雰囲気がいい',look_style:'おしゃれ',room_nice:'部屋がきれい',room_cafe:'カフェから',room_work:'職場から',item_pc:'Mac・いいPC',item_earphone:'イヤホン',item_car:'車のキー',face_nervous:'緊張してる',face_smile:'笑顔'};
+      html += `<div style="font-size:11px;font-weight:700;color:var(--text-xs);margin-bottom:6px">アイスネタTOP5</div><table class="stats-table"><tr><th>ネタ</th><th>回数</th></tr>`;
+      sorted.forEach(([k,v]) => { html += `<tr><td>${ICE_LABELS[k]||k}</td><td>${v}回</td></tr>`; });
+      html += `</table><div style="height:10px"></div>`;
+    }
+  }
+  if (checks.includes('job')) {
+    const jobCnt = {};
+    records.forEach(r => { const j = r.selected_job || (r.job&&r.job[0])||'不明'; jobCnt[j]=(jobCnt[j]||0)+1; });
+    const sorted = Object.entries(jobCnt).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    if(sorted.length) {
+      html += `<div style="font-size:11px;font-weight:700;color:var(--text-xs);margin-bottom:6px">職種分布</div><table class="stats-table"><tr><th>職種</th><th>件数</th></tr>`;
+      sorted.forEach(([k,v]) => { html += `<tr><td>${k}</td><td>${v}件</td></tr>`; });
+      html += `</table><div style="height:10px"></div>`;
+    }
+  }
+  if (checks.includes('concern')) {
+    const cCnt = {};
+    records.forEach(r => { (r.concern||[]).forEach(c => { cCnt[c]=(cCnt[c]||0)+1; }); });
+    const sorted = Object.entries(cCnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    if(sorted.length) {
+      html += `<div style="font-size:11px;font-weight:700;color:var(--text-xs);margin-bottom:6px">懸念ワードTOP5</div><table class="stats-table"><tr><th>懸念</th><th>件数</th></tr>`;
+      sorted.forEach(([k,v]) => { html += `<tr><td>${k}</td><td>${v}件</td></tr>`; });
+      html += `</table><div style="height:10px"></div>`;
+    }
+  }
+  if (checks.includes('attr')) {
+    const attrCnt = {};
+    records.forEach(r => { if(r.attr) attrCnt[r.attr]=(attrCnt[r.attr]||0)+1; });
+    const sorted = Object.entries(attrCnt).sort((a,b)=>b[1]-a[1]);
+    if(sorted.length) {
+      html += `<div style="font-size:11px;font-weight:700;color:var(--text-xs);margin-bottom:6px">属性ルート分布</div><table class="stats-table"><tr><th>属性</th><th>件数</th></tr>`;
+      sorted.forEach(([k,v]) => { html += `<tr><td>${k}</td><td>${v}件</td></tr>`; });
+      html += `</table><div style="height:10px"></div>`;
+    }
+  }
+  document.getElementById('stats-result').innerHTML = html || '<div style="color:var(--text-xs);font-size:12px">集計項目を選択して「集計」を押してください</div>';
+}
+
+
+// ============================================================
+// スクリプトページ初期化
+// ============================================================
+function initScriptPage() {
+  var wrap = document.getElementById('script-wrap');
+  if (!wrap) return;
+  var tmpl = document.getElementById('v14-html-tmpl');
+  if (!tmpl) return;
+
+  // 毎回フレッシュに再挿入（状態リセットのため）
+  wrap.innerHTML = '';
+  wrap.insertAdjacentHTML('beforeend', tmpl.innerHTML);
+
+  // v14 全状態リセット
+  currentStep = 0;
+  yesIntent = 0;
+  yesPositive = 0;
+  iceTemp = null;
+  tappedKeys = new Set();
+  groupOpen = {};
+  clientResult = null;
+  mode = 'bridge';
+  flags = {needsWeak:false, visionVague:false, studyHard:false};
+  hearing = {ice:null,age:null,edu:null,location:[],job:[],career:[],transfer:null,
+             income:[],dream:[],concern:[],attr:null,budget:null,motivation:null,
+             attrKeys:[],selectedJob:null};
+
+  // 日時セット
+  var now = new Date();
+  var pad = function(n){return String(n).padStart(2,'0');};
+  var dt = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())
+           +'T'+pad(now.getHours())+':'+pad(now.getMinutes());
+  var dtEl = document.getElementById('ci-datetime');
+  if (dtEl) dtEl.value = dt;
+
+  // 描画
+  renderAll();
+}
+
+// ===== SCRIPT ENGINE (v14) =====
+
+var currentStep=0,yesIntent=0,yesPositive=0,tappedKeys=new Set(),notifTimer,attrFlashTimer; // v14 state
+var iceTemp=null; // null | 'cold' | 'warm' | 'hot'
+var mode='bridge';
+var flags={needsWeak:false,visionVague:false,studyHard:false};
+var hearing={ice:null,age:null,edu:null,location:[],job:[],career:[],transfer:null,income:[],dream:[],concern:[],attr:null,budget:null,motivation:null,attrKeys:[],selectedJob:null};
+// トグル開閉状態
+var groupOpen={};
+
+// ============================================================
+// 職業別トーク定義
+// key: 職業ボタンのval
+// 各ステップIDに対してカスタムトークを定義
+// 未定義のステップは汎用トークにフォールバック
+// ============================================================
+var JOB_TALKS={
+  '保育士・幼稚園教諭':{
+    label:'保育士',
+    career:[
+      '「保育士って、子どもが好きで入ったけど体力的にきついっていうのが一番多いんですよね。〇〇さんはどういうきっかけで保育士になったんですか？」',
+      '「実際やってみて、人間関係どうでしたか？保護者対応とか職場の先生との関係とか。」',
+      '「保育士って手取り低いのに業務量が多いっていうのが業界の実態で、それを感じたりってありましたか？」',
+      '「黙々と作業するのが好きっていう感じですか？それとも子どもたちと関わるのが好きという感じ？」'
+    ],
+    now:[
+      '「保育士のスキルってすごくて、観察力とか傾聴力とかWebの仕事でも全部活きるんですよ。クライアントのニーズを引き出すとか、デザインで相手の立場に立って考えるとか。」',
+      '「今の年収ってどのくらいですか？一般的に保育士って低いじゃないですか。同じ子どものために働くにしてもWebで稼いで支援する側になるっていう選択肢もあると思うんですよ。」'
+    ],
+    vision:[
+      '「保育士やりながらWebもできるって、実はすごく強くて。子育て系のサービスのデザインとか、その業界のこと分かってる人間が作ったものって全然違うんですよ。」',
+      '「実家暮らしのうちに動いとくのは正直めちゃくちゃいいタイミングで。固定費少ない分リスクないんですよ。」'
+    ]
+  },
+  '看護師・介護':{
+    label:'医療・介護系',
+    career:[
+      '「看護師って夜勤あったりしてかなりきついですよね。体力的に続けられるかっていう不安って感じたりしますか？」',
+      '「患者さんとの関係とか、先輩とのヒエラルキーとか、職場の人間関係ってどうですか？」',
+      '「夜勤手当入れたらそこそこ収入あると思うんですけど、それでも続けたくないって思うのはやっぱり消耗感ですか？」',
+      '「看護師って資格があるから安定してるって言われるけど、それが逆に辞めにくくしてたりもしますよね。」'
+    ],
+    now:[
+      '「医療の知識ってWebで活かせる場所めちゃくちゃあって、医療系のサービスとかヘルスケアアプリとかそこに関わるデザインとかって専門知識ない人が作れないんですよ。」',
+      '「体力的な消耗がないっていうだけで、Webに来てから生活の質変わったって言う元看護師の卒業生います。」'
+    ],
+    vision:[
+      '「今の体力を使う働き方から、スキルを使う働き方にシフトするっていうのが一番大事かなと思ってて。〇〇さんがやってきたことは全部財産なんで、それをWebに乗っけるだけなんですよ。」'
+    ]
+  },
+  '現場系・施工管理':{
+    label:'建設・施工管理',
+    career:[
+      '「施工管理って体力的にめちゃくちゃきついですよね。朝何時起きですか？」',
+      '「現場って男社会というか、上下関係きつかったりしますか？」',
+      '「年収どのくらいですか？施工管理って稼げるは稼げるけど、その分消耗するっていうのが多いですよね。」',
+      '「30代40代になっても今と同じ体力で働けるか、みたいなことは考えたりしますか？」'
+    ],
+    now:[
+      '「施工管理って工程管理とかコスト管理とか、実はWebのプロジェクト管理とめちゃくちゃ似てるんですよ。ディレクションって言うんですけど、そっちに行く人も多くて。」',
+      '「体力じゃなくてスキルで稼ぐっていう軸に変えたいっていうのが、今の施工管理から来る人のほぼ全員が言うことなんですよ。」'
+    ],
+    vision:[
+      '「建設業界の会社のホームページとかって正直ダサいのめちゃくちゃ多くて、その業界の知識持ってるデザイナーって超貴重なんですよ。元施工管理でWebデザイナーって完全に差別化できます。」'
+    ]
+  },
+  '飲食・サービス':{
+    label:'飲食・サービス',
+    career:[
+      '「飲食って労働時間長くて給料低いっていうのが正直なところじゃないですか。実際どのくらい働いてるんですか？」',
+      '「接客って体力もそうやけど、精神的にしんどい時もありますよね。クレームとか理不尽なお客さんとか。」',
+      '「飲食でずっとやっていきたいっていう気持ちはあるんですか？それともいつか抜け出したいって思ってる感じ？」',
+      '「料理とか接客のスキルは確かにあるけど、それって業界の外に持ち出せないっていうのがもどかしくなったりしません？」'
+    ],
+    now:[
+      '「飲食って接客力めちゃくちゃ高くなるじゃないですか。Webデザイナーって実は営業もするんですよ。そのコミュ力って武器になります。」',
+      '「飲食のお客さんを喜ばせるセンスって、Webでユーザー目線のデザインするのにめちゃくちゃ活きるんですよ。」'
+    ],
+    vision:[
+      '「飲食店のホームページとかSNS運用って需要めちゃくちゃあって、業界のこと分かってる人がやったら全然違うんですよ。元飲食スタッフのWebデザイナーって強いですよ。」'
+    ]
+  },
+  '正社員（激務）':{
+    label:'激務正社員',
+    career:[
+      '「残業とかどのくらいあるんですか？月何時間くらい？」',
+      '「仕事自体はやりがいあります？それとも惰性で続けてる感じですか？」',
+      '「有給って取れてます？休みたい時に休める環境ですか？」',
+      '「このまま5年10年続けるっていうのはイメージできますか？」'
+    ],
+    now:[
+      '「正社員で激務ってことは、今の収入ベースはある程度あると思うんですよ。そこから副業でWebを始めて、稼げるようになったら独立っていう王道パターンが一番リスクないですよ。」',
+      '「今の仕事やめなくていいんですよ。副業から始めて、自信ついてから独立する人が一番多くて、結果も出やすい。」'
+    ],
+    vision:[
+      '「時間の自由を手に入れるっていうのが一番の目的だと思うんですけど、Webだとリモートで場所も時間も自分で決められるんですよ。」'
+    ]
+  },
+  'フリーター':{
+    label:'フリーター',
+    career:[
+      '「今のバイトってどんな仕事してるんですか？」',
+      '「フリーターを選んだのって何か理由があったんですか？やりたいことを探してたとか、ちょっと休みたかったとか。」',
+      '「収入的にはどうですか？生活できてる感じですか？」',
+      '「このままフリーターで続けていくっていうのはどう考えてますか？」'
+    ],
+    now:[
+      '「フリーターって時間の融通きくじゃないですか。その時間を勉強に使えたら正社員の人より早く独立できるケースが多いんですよ。」',
+      '「今のうちに動いとくのが正直一番いいタイミングで、20代のうちにスキルつけた人って30代で圧倒的に差がつくんですよ。」'
+    ],
+    vision:[
+      '「フリーターからWebデザイナーになった卒業生が一番多いんですよ、実は。時間あるし、やる気さえあれば半年で仕事取れてる人ばっかりで。」'
+    ]
+  }
+};
+
+// ============================================================
+// ステップ定義
+// ============================================================
+var ALL_STEPS=[
+  // -----------------------------------------------
+  {id:'ice_look',name:'冒頭アイスブレイク',sub:'目に飛び込んだ情報で即つかむ',goal:'警戒心をゼロにする・名前と顔を一致させる',modes:['bridge','closer'],guide:[
+    {label:'■ アジェンダ宣言の前に — 見えた情報で即つかむ',blocks:[
+      {type:'note',cls:'teal',text:'⚡ 画面が繋がった瞬間、相手の見た目・部屋・持ち物・表情から1つ拾って即インサート。沈黙NG'},
+      {type:'talk',cls:'highlight',text:'（名前）「〇〇さんって読み方珍しいですよね。どんな字書くんですか？」'},
+      {type:'talk',cls:'highlight',text:'（雰囲気）「なんか落ち着いてる雰囲気ですよね。話しやすそうで助かります笑」'},
+      {type:'talk',cls:'highlight',text:'（部屋）「後ろの部屋めっちゃきれいですね。インテリアこだわってます？」'},
+      {type:'talk',cls:'highlight',text:'（カフェ）「カフェからですか？どこらへんのカフェですか？いいですね」'},
+      {type:'talk',cls:'highlight',text:'（PC）「PC、いいの使ってますね。MacBookですか？こだわってます？」'},
+      {type:'note',cls:'good',text:'左カラムの「👁 冒頭アイスブレイク」から該当するものをタップするとトーク例がフラッシュ表示されます'}
+    ]},
+    {label:'■ 居住地・出身地を自然に引き出す',blocks:[
+      {type:'talk',text:'「今お住まいどちらなんですか？」'},
+      {type:'talk',text:'「ご出身はどちらですか？」'},
+      {type:'talk',cls:'key-talk',text:'（共通点あれば）「え、僕もその辺住んでたことあるんですよ。ちょっとだけ親近感ありますよ笑」'},
+      {type:'note',cls:'',text:'1人暮らしか実家暮らしかも確認 → 決済権の把握につながる'}
+    ]},
+    {label:'■ アジェンダ宣言',blocks:[
+      {type:'talk',cls:'highlight',text:'「今日なんですけど、無料レクチャーって書いてあったと思うんですけど、限られた時間でウェブデザインのことをレクチャーするだけっていうのはあんまり有効じゃないかなと思ってまして、」'},
+      {type:'talk',cls:'highlight',text:'「〇〇さんのこれまでのキャリアや今の状況をお聞きした上で、今後どうなっていきたいかっていうところにフォーカス当ててお話ししていきたいなと。Web業界で働くとかスクール活用するみたいなのが適していればその辺触れていく程度でいいかなと思ってますんで、ザックバランにキャリアのお話をしていきましょう。」'},
+      {type:'yes_check',ytype:'intent',label:'「はい、お願いします」「ありがとうございます」→ 意図的YES（警戒心ゼロ確認）'},
+      {type:'note',cls:'good',text:'「適していれば触れる程度」で押し売り感を完全に消す'}
+    ]},
+    {label:'■ 来場動機を確認（動機タイプ早期判定）',blocks:[
+      {type:'talk',cls:'highlight',text:'「今日ってどんなことが気になって来てくださったんですか？」'},
+      {type:'note',cls:'yellow',text:'⚡ 「スキル習得・発信したい程度」→ 左カラム「ニーズ薄」タップ。「なんとなく」→「ビジョン未定」タップ。課題解決型なら通常進行'}
+    ]}
+  ]},
+  // -----------------------------------------------
+  {id:'career',name:'職歴ヒアリング',sub:'転職動機・感情・判断軸を掘り出す',goal:'転職回数・なぜ変えたか・きつかったこと を把握',modes:['bridge','closer'],guide:[
+    {label:'■ 最終学歴・最初の就職',blocks:[
+      {type:'talk',text:'「最終学歴ってどちらになるんですか？高卒、大卒、専門…？」'},
+      {type:'talk',text:'「最初のお仕事ってどんな仕事だったんですか？」'},
+      {type:'note',cls:'',text:'起点を確認してから転職歴を時系列で追う'}
+    ]},
+    {label:'■ 職業別の深掘り（自動切替）',blocks:[
+      {type:'note',cls:'teal',text:'⚡ 左カラムで職業をタップすると、その職業向けのトーク例がここに表示されます'},
+      {type:'talk',cls:'job-talk',text:'（職業を選択してください）'}
+    ]},
+    {label:'■ 転職動機を掘る（全職業共通）',blocks:[
+      {type:'talk',cls:'highlight',text:'「〇〇からその会社に入ろうと思ったのは何かあったんですか？」'},
+      {type:'talk',text:'「で、実際にやってみてどうでしたか？」'},
+      {type:'yes_check',ytype:'intent',label:'不満・苦労を語り出す → 意図的YES（共感同意）。「そうなんですよ」「きつかったです」'},
+      {type:'note',cls:'good',text:'「やってみてどうでしたか？」は必ず聞く。良い面も悪い面も引き出せる万能質問'}
+    ]},
+    {label:'■ ならなかった道を深掘る',blocks:[
+      {type:'talk',cls:'warn-talk',text:'「もし今の仕事をずっと続けていったらどうなりそうですか？」'},
+      {type:'yes_check',ytype:'intent',label:'「考えたくない」「やばいですね」などの反応'},
+      {type:'note',cls:'yellow',text:'⚡ ビジョン未定型はここで不安を引き出して自分ゴト化させる。これをやらないと「考えます」で終わる'}
+    ]},
+    {label:'■ 空白期間・副業経験（あれば）',blocks:[
+      {type:'talk',cls:'key-talk',text:'「僕も2年前、9ヶ月くらいニートしてて。石垣島1ヶ月行ったり、アフリカ大陸一周したりとか。でもああいう時間って大事っすよね。」'},
+      {type:'note',cls:'good',text:'相手の経験と自分が重なる瞬間に差し込む自己開示②'}
+    ]},
+    {label:'■ 収入を自然に確認',blocks:[
+      {type:'talk',text:'「高い月だと月収どのくらい行ったんすか？」'},
+      {type:'note',cls:'',text:'直接「いくら？」は言わない。持ち上げながら引き出す'}
+    ]}
+  ]},
+  // -----------------------------------------------
+  {id:'now',name:'現在→未来ヒアリング',sub:'「今日ここに来た理由」を言語化させる',goal:'未来像・コミットレベル を把握',modes:['bridge','closer'],guide:[
+    {label:'■ 今後の希望を引き出す',blocks:[
+      {type:'talk',cls:'highlight',text:'「今日ここに来たってことは何かしら解決したいことがあるんだと思うんすけど、なんか今後どうしていきたいとかいうのはどういう風に考えてるんですか？」'},
+      {type:'yes_check',ytype:'intent',label:'「そうなんですよ」「実は…」と話し始める → 意図的YES（来場動機の確認）'},
+      {type:'note',cls:'good',text:'「解決したいことがある」と先に言語化してあげる'}
+    ]},
+    {label:'■ 職業別：未来へのリンク（自動切替）',blocks:[
+      {type:'note',cls:'teal',text:'⚡ 職業をタップすると、その職業に合わせた未来へのリンクトークが表示されます'},
+      {type:'talk',cls:'job-talk',text:'（職業を選択してください）'}
+    ]},
+    {label:'■ ビジョン未定型への対処',blocks:[
+      {type:'talk',cls:'warn-talk',text:'「もし今から5年後も今の状況のままだったらどうなってますか？」'},
+      {type:'yes_check',ytype:'intent',label:'「やばいですよね」「変わってないと思います」→ 意図的YES（危機感の確認）'},
+      {type:'note',cls:'yellow',text:'⚠️ 未来像のコミットを先に作る。これをやらないと資金の話が空回りする'}
+    ]},
+    {label:'■ 自己開示③：未来像のリンク',blocks:[
+      {type:'talk',cls:'key-talk',text:'「本当に僕もあの先週もずっと京都にいたりとか、この前も四国一周しながら働いてたんすよ。大自然囲まれながら田舎の喫茶店で山見ながら仕事するとか。」'}
+    ]},
+    {label:'■ 画面共有への移行',blocks:[
+      {type:'talk',cls:'highlight',text:'「じゃあ〇〇さんの未来の中に、Web業界で働くみたいなことが必要そうなので、具体的にお話ししていこうかなと思います。ちょっと画面共有しますね。」'}
+    ]}
+  ]},
+  // -----------------------------------------------
+  {id:'company',name:'会社紹介（スライド）',sub:'信頼の土台を作る',goal:'ファーストビューへの信頼を確立する',modes:['bridge','closer'],guide:[
+    {label:'■ スクールを作った理由',blocks:[
+      {type:'talk',cls:'highlight',text:'「僕たちは元々Webの会社があってスクールを作ったんで、ここが大きく違くて。Webの会社が作ったスクールなんですよ。スクールやってるけどウェブ制作やってない会社めっちゃあるんで。ここがめちゃくちゃ違うところです。」'},
+      {type:'note',cls:'good',text:'「Web会社がスクールを作った」の順番が信頼の根拠'}
+    ]},
+    {label:'■ 実績・メディア露出',blocks:[
+      {type:'talk',text:'「厚労省の健康寿命を伸ばすプロジェクトとか、内閣がやってる地方創生のプロジェクトにも携わってる会社なんですよ。テレビや雑誌にも結構取り上げられてて。」'},
+      {type:'note',cls:'good',text:'政府系プロジェクトへの言及で信頼感を上げる'}
+    ]},
+    {label:'■ うさん臭くない証明',blocks:[
+      {type:'talk',cls:'key-talk',text:'「そこらへんにいるうさん臭い会社じゃないみたいなところが結構強みですかね。」'},
+      {type:'yes_check',ytype:'intent',label:'「なるほど」「確かに」「安心しました」→ 意図的YES（信頼確立）'},
+      {type:'note',cls:'good',text:'相手が思っている不安を先に口に出して払拭する'}
+    ]}
+  ]},
+  // -----------------------------------------------
+  {id:'industry',name:'業界教育（スライド）',sub:'「Web業界一択」を論理的に腹落ちさせる',goal:'「Web業界に行くしかない」と思う状態を作る',modes:['bridge','closer'],guide:[
+    {label:'■ 時代の変化を提示',blocks:[
+      {type:'talk',cls:'highlight',text:'「これどんだけ対策しますかみたいなところなんですよ。なんか解決済みの問題ありますよね？」'},
+      {type:'yes_check',ytype:'intent',label:'「ないですね」「ないと思います」 → 意図的YES'},
+      {type:'note',cls:'good',text:'「解決済みの問題ありますか？」と振る。答えは「ない」しかない'}
+    ]},
+    {label:'■ Web業界の成長性',blocks:[
+      {type:'talk',text:'「デジタル化って止まらないんですよ。コロナでむしろ加速して、今でも全然人手が足りてない状態で。」'},
+      {type:'talk',text:'「Webのスキルって今後10年20年絶対に需要なくならないんですよ。むしろ増え続けてる。」'},
+      {type:'yes_check',ytype:'intent',label:'「そうですよね」「確かに」→ 意図的YES（業界成長の腹落ち）'}
+    ]},
+    {label:'■ 環境選択の重要性',blocks:[
+      {type:'talk',cls:'highlight',text:'「成長している産業で人手がいないんでここに入ったらもう勝ちなんすよ。稼ごうと頑張るよりも勝てる環境に行くことのがよっぽど大事すね。」'},
+      {type:'yes_check',ytype:'intent',label:'「確かに」「そうですね」 → 意図的YES'},
+      {type:'note',cls:'good',text:'「頑張る」より「環境を変える」という考え方を植え付ける'}
+    ]}
+  ]},
+  // -----------------------------------------------
+  {id:'job',name:'職種選択（スライド）',sub:'「なぜWebデザイナーか」をロジックで納得させる',goal:'エンジニア・動画編集を外してデザイナーに絞り込む',modes:['bridge','closer'],guide:[
+    {label:'■ プログラミングを外す',blocks:[
+      {type:'talk',text:'「プログラミングってまずめっちゃ難しいんすよ。独学で身につけるまでに1〜2年かかることもあって、しかもAIに取られるリスクもある。」'},
+      {type:'talk',text:'「エンジニアって一発のホームラン打てるけど、打席回ってくるのが少ない。そしてその打席に立つまでが長すぎる。」'},
+      {type:'yes_check',ytype:'intent',label:'「確かにリスクありますね」「そうですよね」→ 意図的YES（エンジニア外し）'}
+    ]},
+    {label:'■ 動画編集を外す',blocks:[
+      {type:'talk',text:'「動画編集は時給500円ぐらいですよ。わざわざスクールで学んで時給500円の仕事やりたいですか？」'},
+      {type:'yes_check',ytype:'intent',label:'「やりたくないですね」「確かに」 → 意図的YES'},
+      {type:'talk',text:'「今YouTubeとかTikTokで動画編集者がめちゃくちゃ増えてて、完全に供給過多なんですよ。単価が下がり続けてる。」'}
+    ]},
+    {label:'■ 野球の例え（必ず使う）',blocks:[
+      {type:'talk',cls:'highlight',text:'「エンジニアはもうなんか清原みたいな感じです。一発のホームランは打てるけどまずそもそも打席回ってくるの少ないしみたいな。でウェブデザイナーはもう一郎みたいな感じです。まずトップバッターで絶対行くし、安定してヒットめっちゃ打てる。」'},
+      {type:'yes_check',ytype:'positive',label:'「確かに！」「なるほど！」笑いが出たら → ポジティブ反応'},
+      {type:'note',cls:'good',text:'「デザイナー＝一郎」の例えは記憶に残る。必ず使う'}
+    ]},
+    {label:'■ デザイナーが選ばれる理由',blocks:[
+      {type:'talk',text:'「Webデザイナーって会社のホームページとか広告とかアプリとかEC、全部関わるんですよ。あらゆるビジネスに必要とされてる職種なんで、仕事がなくなることがない。」'},
+      {type:'talk',text:'「しかもデザインってAIには完全には取って代われなくて、センスとか意図とかクライアントとのやり取りとか、人間じゃないとできない部分が大きいんですよ。」'},
+      {type:'yes_check',ytype:'intent',label:'「なるほど」「それは安心」→ 意図的YES（デザイナー一択の納得）'}
+    ]}
+  ]},
+  // -----------------------------------------------
+  {id:'dark',name:'業界の闇（スライド）',sub:'スクール業界の問題を提示する',goal:'「スクールにも闇がある」という認識を作る',modes:['bridge','closer'],bridgeEnd:true,guide:[
+    {label:'■ 未経験の壁',blocks:[
+      {type:'talk',cls:'highlight',text:'「経験者しか仕事取れないんですよ。でも未経験だと仕事取れないじゃないですか。で、仕事取れないと未経験じゃないですか？これ無限ループするんですよね。」'},
+      {type:'yes_check',ytype:'intent',label:'「確かに…」「そうですよね」 → 意図的YES'},
+      {type:'note',cls:'good',text:'「無限ループ」のフレーズは必ず使う。相手が頭の中で図を描ける'}
+    ]},
+    {label:'■ 美容師エピソード（実話）',blocks:[
+      {type:'talk',cls:'key-talk',text:'「僕の髪切ってくれてる美容師さんウェブデザインスクールの卒業生でデザインできるんですよ、未だに僕の髪切ってるんですよ。そういうことなんですよね。」'},
+      {type:'yes_check',ytype:'positive',label:'「え、そうなんですか！」「やばいですね」→ ポジティブ反応（業界の闇リアル）'},
+      {type:'note',cls:'good',text:'「美容師さん」の実話エピソードは必ず使う。抽象論を具体化する'}
+    ]},
+    {label:'■ 闇の結論',blocks:[
+      {type:'talk',cls:'highlight',text:'「よくあのスクール卒業したけど仕事できませんみたいな、そういう卵のままのデザイナーみたいなのがもうちゃんちゃんいるっていうのがオンラインスクールの実態ですね。本当に9割ぐらいのスクール潰れた方がいいっすもんね。」'},
+      {type:'note',cls:'purple',text:'🔗 ブリッジモード：ここで「次へ」を押すとブリッジ確認パネルが開きます'}
+    ]}
+  ]},
+  // -----------------------------------------------
+  {id:'merit',name:'自社優位性（スライド）',sub:'4つの解決策を提示する',goal:'「まさにそれが欲しかった」を引き出す',modes:['closer'],guide:[
+    {label:'■ 一言で言うと',blocks:[
+      {type:'talk',cls:'highlight',text:'「一言で言うと僕たち仕事の取り方まで教えるウェブデザインスクールになってます。受講期間中にフリーランスになれるスクールなんですよ。」'},
+      {type:'yes_check',ytype:'positive',label:'「それいいですね」「え、それ違う」→ ポジティブ反応（他スクールとの違い）'}
+    ]},
+    {label:'■ 空飛ぶピカチュウ',blocks:[
+      {type:'talk',cls:'key-talk',text:'「営業とマーケティングができるデザイナーになれるって感じです。空を飛んで火炎放射してるピカチュウみたいな感じです。まあ改造されてます。」'},
+      {type:'yes_check',ytype:'positive',label:'笑いが出た・「面白い」「それいいですね」 → ポジティブ反応'},
+      {type:'note',cls:'good',text:'笑いが起きたらYESカウント。感情が動いた証拠'}
+    ]},
+    {label:'■ サポート体制',blocks:[
+      {type:'talk',text:'「24時間相談できるチャットグループがあって、専属講師がついて2人3脚でやって、月2回の定例ミーティングもあって。受講生同士のコミュニティもあるんで1人ぼっちになることがないんですよ。」'},
+      {type:'talk',text:'「うちだとこっち側が進捗管理してるんで、遅れてたらケツ叩きに行きます。それくらいしないと続けられないのが人間なんで笑」'},
+      {type:'yes_check',ytype:'positive',label:'笑い・「それ助かります」「心強い」→ ポジティブ反応（サポートへの安心感）'}
+    ]},
+    {label:'■ 逆説クロージング',blocks:[
+      {type:'talk',cls:'highlight',text:'「ぶっちゃけこの環境でやれない人は諦めた方がいいかなとは思ってます。他のスクールでここまでやってくれるところないんで。この環境でできない人は多分何やっても難しいかなと思うんで、諦めて今の現状維持でいいかなと思います。」'},
+      {type:'yes_check',ytype:'positive',label:'「いや、やりたい」「そんなことない」と言ったら → ポジティブ反応（最重要）'},
+      {type:'note',cls:'good',text:'「諦めた方がいい」は逆説クロージング。「やりましょう」とは絶対に言わない'}
+    ]}
+  ]},
+  // -----------------------------------------------
+  {id:'vision',name:'未来拡張＆自己開示',sub:'顧客のビジョンを具体化し感情的コミットメントを作る',goal:'「絶対やりたい」と思う状態を作る',modes:['closer'],guide:[
+    {label:'■ 年収ロードマップ（自己開示の核心）',blocks:[
+      {type:'talk',cls:'key-talk',text:'「僕25までディズニーキャストやってて、そっから25〜28ぐらいまで不動産屋やってて、700とかだったんすよ。」'},
+      {type:'talk',cls:'highlight',text:'「で、28でウェブ業入ったんすよ。で、29で1000万行きました。で、30で2000万行きました。」'},
+      {type:'yes_check',ytype:'positive',label:'「え、すごい」「本当ですか？」「いいな」 → ポジティブ反応'},
+      {type:'talk',text:'「800から1000が一番きつかった。なんか壁があるんですよね。でもそこ超えたら早かった。」'},
+      {type:'note',cls:'good',text:'正直に「きつかった」と言うことで信頼が生まれる'}
+    ]},
+    {label:'■ 職業別：ビジョンとのリンク（自動切替）',blocks:[
+      {type:'note',cls:'teal',text:'⚡ 職業をタップすると、その職業に合わせたビジョンリンクトークが表示されます'},
+      {type:'talk',cls:'job-talk',text:'（職業を選択してください）'}
+    ]},
+    {label:'■ キャラクター一致の発見',blocks:[
+      {type:'talk',cls:'key-talk',text:'「ごめんなさい。あの、気づいてましたよ。〇〇の話あたりから多分めっちゃ似てるだろうなって思ってましたね。」'},
+      {type:'yes_check',ytype:'positive',label:'「え、そうですか！」「ほんとですか」嬉しそう → ポジティブ反応'},
+      {type:'note',cls:'good',text:'「気づいてましたよ」：最初から観察していたことを伝える。相手が特別な存在だと感じる'}
+    ]}
+  ]},
+  // -----------------------------------------------
+  {id:'plan',name:'資金確認＋プラン説明',sub:'月予算を確認してからプランを提示する',goal:'プレミアム48回払いへの誘導',modes:['closer'],guide:[
+    {label:'⚡ 資金確認（冒頭で必ず実施）',blocks:[
+      {type:'talk',cls:'highlight',text:'「ちょっと具体的に料金とかプランとかも説明していきます。今月の予算だといくらぐらいがいいとかありますか？あとまずコースどれ？」'},
+      {type:'note',cls:'warn',text:'資金確認が遅れると最後でNGになる。必ずここで先に聞く。後から聞くと「そんな余裕ない」で終わる'}
+    ]},
+    {label:'■ 分割払い提示',blocks:[
+      {type:'talk',text:'「プレミアムで48回とかで組めば、初回だけ4万1000円ぐらい行くんすけど、2回目以降3万8000円とかになりますかね。」'},
+      {type:'talk',text:'「1日1000円ぐらいですよ。コーヒー1杯分でスキルが手に入るって考えたらどうですか。」'},
+      {type:'yes_check',ytype:'intent',label:'「たしかに」「それなら…」「そうですね」 → 意図的YES'},
+      {type:'note',cls:'',text:'数字を誤魔化さない姿勢が信頼を生む。さらっと言い切る'}
+    ]},
+    {label:'■ 繰り上げ返済の案内',blocks:[
+      {type:'talk',cls:'key-talk',text:'「僕もやったんすけど、やっぱ卒業して仕事がっつり取っていって、その金でブワっと繰り上げて返していきましたね。」'},
+      {type:'yes_check',ytype:'intent',label:'「なるほど、それならいけるかも」「確かに」→ 意図的YES（返済への納得）'},
+      {type:'note',cls:'',text:'「先輩が実際にやった」事実が一番の安心材料'}
+    ]},
+    {label:'■ スマクレ（カード審査NG時）',blocks:[
+      {type:'talk',text:'「カードが通らなかった場合でも、スマクレっていう分割払いの仕組みが使えるんで、そっちで対応できることが多いです。」'}
+    ]}
+  ]},
+  // -----------------------------------------------
+  {id:'concern',name:'懸念点処理',sub:'全肯定→深掘り→教育で処理する',goal:'「考えます」を「やります」に変える',modes:['closer'],guide:[
+    {label:'「時間が取れない」',blocks:[
+      {type:'talk',cls:'highlight',text:'「みんなそういう時間に使ってるだけなんで、それを勉強に置き換えればいいだけなんですよ。週20時間とかで、1日3〜4時間。Netflixを見る時間をこれに当てるだけで全然進みそうじゃないですか。」'},
+      {type:'yes_check',ytype:'intent',label:'「確かにそうですね」「それならできそう」→ 意図的YES（時間懸念の解消）'},
+      {type:'note',cls:'',text:'「忙しい」を否定せず、「使い方の問題」にリフレーム'}
+    ]},
+    {label:'「お金がない」',blocks:[
+      {type:'talk',text:'「月3〜4万とか飲み会とかに使うやんみたいなのを今こっちに当てればいい。1年後これを全部習得した状態で卒業できるんなら、そっからシコたま飲みに行けばいいやんていうね。」'},
+      {type:'talk',text:'「副業で仕事取れたらその収入をそのまま充当できるんで、実質払いながら稼いで相殺していくような感じになる人が多いですよ。」'},
+      {type:'yes_check',ytype:'intent',label:'「それならいけそう」「確かに」→ 意図的YES（資金懸念の解消）'}
+    ]},
+    {label:'「センスがない」',blocks:[
+      {type:'talk',text:'「デザインって才能じゃなくてルールなんですよ。4つのポイントを守れば誰でも作れる。添削サポートがあるから、センスじゃなくて技術で解決できます。」'},
+      {type:'talk',text:'「正直センスがない人の方が伸びることが多くて、変なクセがないぶん素直にルール通り作れるんですよ。」'},
+      {type:'yes_check',ytype:'intent',label:'「そうなんですね」「なるほど」→ 意図的YES（センス懸念の解消）'}
+    ]},
+    {label:'「続けられるか不安」',blocks:[
+      {type:'talk',text:'「うちだとこっちが管理するんで、サボったらケツ叩きに来ます笑。1人で続けなくていい環境になってるんで、そこは心配しなくて大丈夫ですよ。」'}
+    ]},
+    {label:'「家族に相談したい」',blocks:[
+      {type:'talk',cls:'highlight',text:'「どんなことを相談しようと思ってますか？」'},
+      {type:'note',cls:'',text:'→ 懸念ポイントを引き出す → 「その点については今日この場で一緒に整理できますよ。」'},
+      {type:'talk',text:'「ご家族が心配されるのって、お金の面ですか？続けられるかどうかですか？どっちですか？」'}
+    ]}
+  ]},
+  // -----------------------------------------------
+  {id:'close',name:'クロージング（ノークロ）',sub:'顧客が自分で「やります」と言う状態を作る',goal:'「どうしたいですか？」の一言で締める',modes:['closer'],guide:[
+    {label:'■ 最後の問いかけ（これだけ）',blocks:[
+      {type:'talk',cls:'highlight',text:'「なんか〇〇さん的にはなんかどうしたいですか？」'},
+      {type:'yes_check',ytype:'positive',label:'「やります」「やりたいです」→ ポジティブ反応（クロージングYES）'},
+      {type:'note',cls:'good',text:'松本式クロージングの全て。「どうしたいですか？」と聞いて黙って待つ。顧客が自分で意志を表明する'},
+      {type:'note',cls:'bad',text:'禁止ワード：「やりましょう」「やりませんか？」「一緒にやっていきましょう（YES前）」「どうですか？」'}
+    ]},
+    {label:'■ 成約の締め（ワンピース引用）',blocks:[
+      {type:'talk',cls:'highlight',text:'「ゾロのセリフで「みんな前だけ見てけよ。背中は俺が守ってやる」って。だからマジで前だけ見てカリキュラムだけやってくれと。背中は俺らが守ってやるっていつもこのタイミングで言ってるんですよ。」'},
+      {type:'note',cls:'good',text:'このセリフは成約直後にだけ使う。タイミングを間違えると逆効果'}
+    ]},
+    {label:'■ 手続きへの移行',blocks:[
+      {type:'talk',text:'「ちょっと15〜30分ほど簡単なお手続きあるんですけど、お時間大丈夫ですか？ちょっと別の人間呼びますね。」'},
+      {type:'note',cls:'warn',text:'成約後は即手続きに入る。間を置くとブロックリスクが跳ね上がる'}
+    ]}
+  ]},
+  // -----------------------------------------------
+  {id:'miきり',name:'見切りクローズ（勧めず終了）',sub:'ニーズ・勉強時間で見込みなしと判断した場合',goal:'正直に終了し代替案を提示する',modes:['bridge','closer'],guide:[
+    {label:'■ 見切り判断の根拠（3条件）',blocks:[
+      {type:'note',cls:'warn',text:'①勉強時間を確保できない　②ニーズが「スキル習得程度」で根本課題が見えない　③動機が「なんとなく」のまま自分ゴト化できない → 2つ以上該当で見切りを検討'}
+    ]},
+    {label:'■ 見切りクローズトーク（松本式）',blocks:[
+      {type:'talk',cls:'highlight',text:'「ちょっとズバリ言っていいですか。今の〇〇さんの状況だと、正直スクールが最適かどうかっていうのがまだ僕も見えてなくて。」'},
+      {type:'talk',cls:'highlight',text:'「やりたい気持ちはめちゃくちゃ応援したいんですけど、今の生活に勉強時間を入れていくのが難しいってなったら、続けられなくなるケースが多いんですよね。」'},
+      {type:'talk',cls:'warn-talk',text:'「なのでそうですね、今すぐスクールっていうよりかは、まず〇〇を整理してから改めてこっちのお話をするっていうのが一番いいかなと正直思います。」'},
+      {type:'note',cls:'good',text:'「正直思います」で誠実さを出す。無理に押しない。ドアを閉めない'}
+    ]},
+    {label:'■ 代替案の提示',blocks:[
+      {type:'talk',text:'「YouTubeでWebデザインの動画いっぱいあるんで、まずそっちで触ってみて興味が続くかどうか確かめてみてもいいと思いますよ。Udemyも1コース1000〜2000円ぐらいで買えますし。」'},
+      {type:'talk',cls:'key-talk',text:'「今日はお時間いただいてありがとうございました。〇〇さんのやりたいこと応援してますんで、なんかあれば気軽に声かけてくださいね。」'}
+    ]}
+  ]}
+];
+
+var ATTR_KEYWORDS=[
+  {val:'place_free',text:'場所の自由が欲しい',label:'【場所の自由型】訴求トーク',talks:['「パソコンさえあればどこにいても仕事できるんですよ。僕も去年アフリカ大陸縦断しながら仕事してましたから。」','「今カナダにいながらこの話できてるじゃないですか。それがそのまま仕事になるんですよ。」','「海外の企業から仕事もらえるようになったら、ドルで稼いで日本円にしたら1.5倍ですよ。英語できるなら最強ですね。」']},
+  {val:'side_income',text:'副業基盤がほしい',label:'【副業基盤型】訴求トーク',talks:['「今の仕事やめなくていいんで。本業続けながら月3〜5万作るところから始める人が一番多いですよ。」','「Webで収入の土台ができたら、今の仕事もストレスなくできるんですよ。辞めてもいいし続けてもいいってなったら仕事の質変わりますよね。」','「副業からフリーランスになった人が一番ボリュームゾーンで、だいたい300〜400万のラインが多いですかね。」']},
+  {val:'job_stress',text:'現職を続けられない',label:'【現職逃避型】訴求トーク',talks:['「体力の限界って自分では分かってると思うんですよ。そのタイミングで動くより今動いた方が絶対いい。」','「対人ストレスがきついって言ってましたよね。Webって基本パソコンと向き合う仕事なんで、そこのしんどさがないんですよ。」','「今の仕事の経験がWebに来たら強みになるんですよ。その業界のこと分かったままWeb使えるから案件取りやすいんで。」']},
+  {val:'independent',text:'独立・起業志向',label:'【独立志向型】訴求トーク',talks:['「独立する時に一番最初に必要なのって集客じゃないですか。それ自分でできたら業者に何十万も払わなくていいし。」','「起業する人たちって30前後から増えてくるんですよ。その時にWebできる友達いたら頼まれるんで、人脈が収入になりますよ。」','「僕の友達が暗コ屋で、業者に頼んだら広告ページ60万って言われたのを僕3万でやったんですよ。そういうことです。」']},
+  {val:'career_change',text:'キャリアチェンジしたい',label:'【キャリアチェンジ型】訴求トーク',talks:['「僕もディズニーキャストから不動産行って、28でWebに来たんですよ。で29で1000万行きました。キャリアチェンジのタイミングとして遅くないんで。」','「スキルがあれば雇用される必要がないんですよ。誰かに雇われてるかどうかという軸から外れられるのが一番大きいかな。」','「今の業界での経験が全部武器になるんで、ゼロからじゃなくてプラスアルファが乗っかる感じですよ。」']},
+  {val:'nomad',text:'旅・ノマド志向',label:'【旅×ノマド型】訴求トーク',talks:['「ワーホリ中に仕事の基盤作れたら、帰国してからも旅しながら仕事できるんですよ。」','「僕20カ国くらい行ってるんですけど、全部パソコン持っていったんですよ。移動自体が生活になるんで、旅行費用じゃなくて生活費が旅になる。」','「海外の企業から仕事もらえるようになったら、ドルで稼いで日本円にしたら1.5倍ですよ。」']},
+  {val:'future_vague',text:'なんとなく気になった',label:'【ビジョン未定型】アプローチ',talks:['「今日ここに来たってことはなんか引っかかるものがあったと思うんですよ。それって何でしたか？」（→ならなかった道を掘る）','「もしWebの仕事が今すぐできるとしたら何をしたいですか？」（→ビジョンを言語化させる）','「もし今の状況がずっと続いたらどうなりそうですか？」（→5年後の不安を想像させる）']},
+  {val:'money_tight',text:'資金面が不安',label:'【資金不安型】対処トーク',talks:['「月いくらぐらいだったらいけそうですか？」（→先に聞いてから逆算する）','「48回まで延ばすと月3万8000円ぐらいになるんで。1日1000円ぐらいですよ。コーヒー1杯分でスキルが手に入るって考えたらどうですか。」','「副業で仕事取れたらその収入をそのまま充当できるんで、実質払いながら稼いで相殺していくような感じになる人が多いですよ。」']}
+];
+
+var KEY_GROUPS=[
+  {id:'g_ice',label:'① 👁 冒頭アイスブレイク',defaultOpen:false,single:true,iceGroup:true,keys:[
+    {text:'名前が珍しい',field:'ice',val:'name_unique',talk:'「〇〇さんって、なんか読み方珍しいですよね。どんな字書くんですか？」'},
+    {text:'名前が呼びやすい',field:'ice',val:'name_easy',talk:'「〇〇さんって呼びやすい名前ですね。すぐ覚えちゃいました。」'},
+    {text:'髪型・服装が似てる',field:'ice',val:'look_similar',talk:'「なんか髪型と服装、似てますね笑」'},
+    {text:'雰囲気がいい・落ち着いてる',field:'ice',val:'look_calm',talk:'「なんか落ち着いてる雰囲気ですよね。話しやすそうで助かります笑」'},
+    {text:'おしゃれ・センスがある',field:'ice',val:'look_style',talk:'「服のセンスいいですよね。それどこですか？」'},
+    {text:'部屋がきれい',field:'ice',val:'room_nice',talk:'「後ろの部屋、めっちゃきれいですね。インテリアこだわってます？」'},
+    {text:'カフェ・外出先から',field:'ice',val:'room_cafe',talk:'「カフェからですか？いいですね。どこらへんのカフェですか？」'},
+    {text:'職場・仕事中から',field:'ice',val:'room_work',talk:'「お仕事の合間にありがとうございます。大丈夫ですか？」'},
+    {text:'Mac・いいPC',field:'ice',val:'item_pc',talk:'「PC、いいの使ってますね。MacBookですか？こだわってます？」'},
+    {text:'イヤホン・ヘッドホン',field:'ice',val:'item_earphone',talk:'「イヤホン、いいやつじゃないですか。音質こだわってますよね。」'},
+    {text:'車のキーが見える',field:'ice',val:'item_car',talk:'「あれ、車のキーですか？何乗ってるんですか？」'},
+    {text:'少し緊張してる',field:'ice',val:'face_nervous',talk:'「緊張しなくて全然大丈夫ですよ。普通に話しましょう笑」'},
+    {text:'笑顔・明るい雰囲気',field:'ice',val:'face_smile',talk:'「笑顔が明るいですね。なんか元気もらえます笑」'}
+  ]},
+  // 2. 居住地（1人暮らし確認が先）,
+  {id:'g_job',label:'② 職業（タップでトーク切替）',defaultOpen:false,keys:[
+    {text:'保育士・幼稚園教諭',field:'__job',val:'保育士・幼稚園教諭',cls:'teal'},
+    {text:'看護師・介護',field:'__job',val:'看護師・介護',cls:'teal'},
+    {text:'現場系・施工管理',field:'__job',val:'現場系・施工管理',cls:'teal'},
+    {text:'飲食・サービス',field:'__job',val:'飲食・サービス',cls:'teal'},
+    {text:'正社員（激務）',field:'__job',val:'正社員（激務）',cls:'teal'},
+    {text:'フリーター',field:'__job',val:'フリーター',cls:'teal'},
+    {text:'正社員（普通）',field:'job'},{text:'事務職',field:'job'},{text:'営業職',field:'job'},
+    {text:'ITエンジニア',field:'job'},{text:'公務員',field:'job'},{text:'自営・個人事業',field:'job',cls:'green'}
+  ]},
+  // 6. 職歴・転職,
+  {id:'g_career',label:'③ 職歴・転職',defaultOpen:false,keys:[
+    {text:'転職なし',field:'transfer',val:'none'},{text:'転職1〜2回',field:'transfer',val:'few'},{text:'転職3回〜',field:'transfer',val:'many'},
+    {text:'空白期間あり',field:'career'},{text:'営業経験あり',field:'career',cls:'green'},{text:'MVP・表彰歴',field:'career',cls:'green'},
+    {text:'メンタル消耗で転職',field:'career'},{text:'体力限界を感じている',field:'career'},{text:'飽き・天井を感じて転職',field:'career'}
+  ]},
+  // 7. 収入（任意・聞けたら）,
+  {id:'g_location',label:'④ 居住地・生活状況',defaultOpen:false,keys:[
+    {text:'1人暮らし',field:'location',cls:'green'},{text:'実家暮らし',field:'location'},{text:'パートナーと同居',field:'location'},{text:'子あり',field:'location'},
+    {text:'主婦・主夫',field:'attr',val:'B',cls:'orange'},{text:'派遣',field:'attr',val:'B',cls:'orange'},{text:'育休中',field:'attr',val:'B',cls:'orange'}
+  ]},
+  // 3. 年齢,
+  {id:'g_age',label:'⑤ 年齢',defaultOpen:false,ageGroup:true,field:'age',min:18,max:45},
+  // 4. 最終学歴,
+  {id:'g_edu',label:'⑥ 最終学歴',defaultOpen:false,singleField:'edu',keys:[
+    {text:'中卒',field:'edu',val:'中卒'},{text:'高卒',field:'edu',val:'高卒'},{text:'専門卒',field:'edu',val:'専門卒'},
+    {text:'短大卒',field:'edu',val:'短大卒'},{text:'大卒',field:'edu',val:'大卒'},{text:'大学院卒',field:'edu',val:'大学院卒'},
+    {text:'現在在学中',field:'edu',val:'在学中',cls:'orange'}
+  ]},
+  // 5. 職業（トーク切替ボタン＋その他）,
+  {id:'g_income',label:'⑦ 収入（任意）',defaultOpen:false,keys:[
+    {text:'月収〜20万',field:'income'},{text:'月収20〜30万',field:'income'},
+    {text:'月収30〜40万',field:'income'},{text:'月収40万〜',field:'income'},
+    {text:'年収600万〜',field:'income',cls:'green'},{text:'不安定・バラつきあり',field:'income'}
+  ]},
+  // 8. 理想・動機,
+  {id:'g_dream',label:'⑧ ★ 理想・動機',defaultOpen:false,keys:[
+    {text:'場所の自由が欲しい',field:'dream',cls:'orange'},{text:'時間の自由が欲しい',field:'dream',cls:'orange'},{text:'年収1000万超えたい',field:'dream',cls:'orange'},
+    {text:'副業で月3〜5万',field:'dream',cls:'orange'},{text:'フリーランスになりたい',field:'dream',cls:'orange'},{text:'独立・起業したい',field:'dream',cls:'orange'},
+    {text:'旅しながら仕事したい',field:'dream',cls:'orange'},{text:'在宅ワークしたい',field:'dream',cls:'orange'},
+    {text:'家族との時間を作りたい',field:'dream'},{text:'今の仕事のまま副収入',field:'dream'},{text:'スキルをつけて転職',field:'dream'}
+  ]},
+  // 9. 懸念,
+  {id:'g_attr',label:'⑨ 🎯 属性キーワード（訴求トーク）',defaultOpen:false,attrGroup:true,keys:[]},
+  {id:'g_concern',label:'⑩ 懸念・不安',defaultOpen:false,keys:[
+    {text:'お金が不安',field:'concern',cls:'red'},{text:'時間が取れるか不安',field:'concern',cls:'red'},{text:'続けられるか不安',field:'concern',cls:'red'},
+    {text:'センスがない',field:'concern',cls:'red'},{text:'家族に相談したい',field:'concern',cls:'red'},{text:'勉強が苦手',field:'concern',cls:'red'},
+    {text:'PCが不慣れ',field:'concern',cls:'red'},{text:'借金・ローンあり',field:'concern',cls:'red'}
+  ]},
+  // 10. リアクション,
+  {id:'g_reaction',label:'⑪ リアクション',defaultOpen:false,keys:[
+    {text:'🎯「はい」「そうですね」',field:'__yes_intent',cls:'green'},{text:'🎯「なるほど」「確かに」',field:'__yes_intent',cls:'green'},
+    {text:'🎯「うん」「ですね」',field:'__yes_intent',cls:'green'},
+    {text:'✨「いいですね」「すごい」',field:'__yes_positive',cls:'teal'},{text:'✨「やりたい」「やります」',field:'__close',cls:'green'},
+    {text:'✨「面白い」「それいい」',field:'__yes_positive',cls:'teal'},
+    {text:'「考えます」「迷ってる」',field:'__concern',cls:'red'},{text:'「高い」「お金が…」',field:'__money',cls:'red'},{text:'「家族に相談します」',field:'__family',cls:'red'},
+    {text:'⚠️ ニーズ薄（スキル習得・発信程度）',field:'__needs_weak',cls:'yellow'},
+    {text:'⚠️ ビジョン未定（なんとなく）',field:'__vision_vague',cls:'yellow'},
+    {text:'🚫 勉強が厳しい → 見切りクローズ',field:'__study_hard',cls:'red'}
+  ]},
+  // 11. 属性キーワード
+];
+var TRANSFER_LABELS={none:'転職なし',few:'1〜2回',many:'3回〜'};
+var SHEET_SCHEMA=[
+  {section:'① アイスブレイク'},{key:'ice',label:'掴んだネタ'},{key:'_ice_temp',label:'氷解け度'},
+  {section:'② 基本情報'},{key:'location',label:'居住・属性'},{key:'age',label:'年齢'},{key:'_edu',label:'学歴'},
+  {section:'③ 職業・キャリア'},{key:'selectedJob',label:'職業（切替）'},{key:'job',label:'その他職業'},{key:'career',label:'職歴メモ'},{key:'transfer',label:'転職スタンス'},
+  {section:'④ 収入（任意）'},{key:'income',label:'収入帯'},
+  {section:'⑤ 動機・未来'},{key:'dream',label:'理想・ゴール'},{key:'attr',label:'属性ルート'},
+  {section:'⑥ 判定フラグ'},{key:'_flags',label:'フラグ'},
+  {section:'⑦ 属性キーワード'},{key:'attrKeys',label:'訴求軸'},
+  {section:'⑧ YES集計'},{key:'_yes_intent',label:'🎯 意図的YES'},{key:'_yes_positive',label:'✨ ポジティブ反応'},{key:'_yes_total',label:'合計YES'},
+  {section:'⑨ 懸念・資金'},{key:'concern',label:'懸念ポイント'},{key:'budget',label:'月予算'}
+];
+var TRANSFER_LABELS={none:'転職なし',few:'1〜2回',many:'3回〜'};
+var ATTR_LABELS={A:'A：正社員激務',B:'B：派遣・主婦'};
+
+function getSteps(){return ALL_STEPS.filter(function(s){return s.modes.indexOf(mode)>=0;});}
+
+function setMode(m){
+  if(m===mode) return;
+  // YESカウントが入っていたらリセット確認
+  if(yesIntent>0||yesPositive>0){
+    if(!confirm('モードを切り替えるとYESカウントがリセットされます。よろしいですか？')){return;}
+    yesIntent=0;yesPositive=0;
+  }
+  mode=m;
+  document.querySelectorAll('.mode-btn').forEach(function(b,i){b.classList.toggle('active',i===(m==='bridge'?0:1));});
+  currentStep=0;closeBridgeConfirm();
+  updateYesGoalLabels();
+  renderAll();
+}
+
+// ============================================================
+// 職業別トーク：特定ステップのブロックを差し替える
+// ============================================================
+function getJobTalksForStep(stepId){
+  if(!hearing.selectedJob)return null;
+  var jt=JOB_TALKS[hearing.selectedJob];
+  if(!jt)return null;
+  var talks=jt[stepId];
+  if(!talks||talks.length===0)return null;
+  return {label:jt.label,talks:talks};
+}
+
+function renderJobBadge(){
+  var badge=document.getElementById('job-badge');
+  if(hearing.selectedJob){
+    badge.classList.add('show');
+    document.getElementById('job-badge-text').textContent=hearing.selectedJob;
+  }else{
+    badge.classList.remove('show');
+  }
+}
+
+// ============================================================
+// 左カラム：キーワードレンダリング（トグル式）
+// ============================================================
+function renderKeys(){
+  var body=document.getElementById('keys-body');
+  if(!body) return;
+  body.innerHTML=KEY_GROUPS.map(function(g,gi){
+    if(groupOpen[g.id]===undefined)groupOpen[g.id]=g.defaultOpen;
+    var isOpen=groupOpen[g.id];
+    var arrow=isOpen?'▲':'▼';
+    var header='<div class="key-group-header" onclick="toggleGroup(\''+g.id+'\')">'
+      +'<span class="key-group-label">'+g.label+'</span>'
+      +'<span class="key-group-arrow">'+arrow+'</span>'
+      +'</div>';
+    var bodyClass='key-group-body'+(isOpen?' open':'');
+    var innerHtml='';
+
+    if(g.iceGroup){
+      var sel=hearing.ice;
+      var keys=g.keys.map(function(k,ki){var act=sel===k.val?'tapped orange':'';return '<button class="key-btn orange '+act+'" onclick="tapIce(\''+k.val+'\',\''+k.text.replace(/'/g,"\\'")+'\')">' +k.text+'</button>';}).join('');
+      var selKey=sel?g.keys.find(function(k){return k.val===sel}):null;
+      var preview=selKey?'<div class="ice-talk-preview">'+selKey.talk+'</div>':'';
+      // 温度ボタン（ネタ選択後のみ表示）
+      var tempRow='';
+      if(sel){
+        var ICE_TEMPS=[
+          {val:'cold', icon:'🧊', text:'まだ固い',   cls:'active-cold'},
+          {val:'warm', icon:'😊', text:'雰囲気和んだ',cls:'active-warm'},
+          {val:'hot',  icon:'😂', text:'笑い取れた', cls:'active-hot'}
+        ];
+        var tempBtns=ICE_TEMPS.map(function(t){
+          var active=iceTemp===t.val?t.cls:'';
+          return '<button class="ice-temp-btn '+active+'" onclick="setIceTemp(\''+t.val+'\')">'
+            +'<span class="itb-icon">'+t.icon+'</span>'
+            +'<span class="itb-text">'+t.text+'</span>'
+            +'</button>';
+        }).join('');
+        tempRow='<div class="ice-temp-row"><span class="ice-temp-label">氷解け度</span>'+tempBtns+'</div>';
+      }
+      innerHtml=keys+preview+tempRow;
+    }else if(g.ageGroup){
+      var sel=hearing.age;var rows='';
+      for(var age=g.min;age<=g.max;age++){var act=sel===age?'tapped green':'';rows+='<button class="key-btn age-btn '+act+'" onclick="tapAge('+age+')">'+age+'</button>';}
+      innerHtml='<div class="key-grid age-grid">'+rows+'</div>'+(sel?'<div style="padding:4px 2px;font-size:11px;color:var(--green);font-weight:700;">✓ '+sel+'歳</div>':'');
+    }else if(g.attrGroup){
+      var keys=ATTR_KEYWORDS.map(function(a){var tapped=hearing.attrKeys.indexOf(a.val)>=0?'tapped':'';return '<button class="key-btn teal '+tapped+'" onclick="tapAttrKey(\''+a.val+'\')">'+a.text+'</button>';}).join('');
+      var previews=hearing.attrKeys.map(function(val){var ak=ATTR_KEYWORDS.find(function(a){return a.val===val});if(!ak)return'';return '<div class="attr-talk-preview"><span class="atp-label">'+ak.label+'</span>'+ak.talks.map(function(t){return'<div class="atp-line">'+t+'</div>'}).join('')+'</div>';}).join('');
+      innerHtml=keys+previews;
+    }else{
+      var keys=g.keys.map(function(k,ki){
+        var id='key_'+gi+'_'+ki;
+        var tapped=tappedKeys.has(id)?'tapped':'';
+        // 職業選択ボタンは別スタイル
+        if(k.field==='__job'){tapped=(hearing.selectedJob===k.val)?'tapped':'';}
+        return '<button class="key-btn '+(k.cls||'')+' '+tapped+'" onclick="tapKey(\''+id+'\',\''+k.field+'\',\''+(k.val||k.text).replace(/'/g,"\\'")+'\',\''+(k.cls||'')+'\')">'+k.text+'</button>';
+      }).join('');
+      innerHtml=keys;
+    }
+    return '<div class="key-group"><'+header+'<div class="'+bodyClass+'"><div class="key-grid">'+innerHtml+'</div></div></div>';
+  }).join('');
+}
+
+function toggleGroup(id){groupOpen[id]=!groupOpen[id];renderKeys();}
+
+function tapAge(age){hearing.age=(hearing.age===age)?null:age;renderKeys();renderSheet();if(hearing.age)showNotif('✓ 年齢',age+'歳');}
+
+function tapIce(val,label){
+  var grp=KEY_GROUPS.find(function(g){return g.iceGroup;});
+  var k=grp?grp.keys.find(function(k){return k.val===val}):null;
+  if(hearing.ice===val){
+    hearing.ice=null; iceTemp=null;
+  }else{
+    hearing.ice=val; iceTemp=null; // ネタ変えたら温度リセット
+    showNotif('👁 アイスブレイク',label);
+    if(k){var f=document.getElementById('ice-flash');f.textContent=k.talk;f.classList.add('show');clearTimeout(f._t);f._t=setTimeout(function(){f.classList.remove('show')},4000);}
+  }
+  renderKeys();renderSheet();renderIceBadge();
+}
+
+function setIceTemp(val){
+  iceTemp=(iceTemp===val)?null:val;
+  var labels={cold:'🧊 まだ固い',warm:'😊 雰囲気和んだ',hot:'😂 笑い取れた'};
+  if(iceTemp) showNotif('🌡 アイス温度',labels[iceTemp]);
+  renderKeys();renderSheet();renderIceBadge();
+}
+
+function renderIceBadge(){
+  var badge=document.getElementById('ice-temp-badge');
+  if(!badge) return;
+  if(!iceTemp||!hearing.ice){badge.className='';badge.innerHTML='';return;}
+  var conf={cold:{cls:'cold',icon:'🧊',text:'まだ固い'},warm:{cls:'warm',icon:'😊',text:'和んだ'},hot:{cls:'hot',icon:'😂',text:'笑い取れた'}};
+  var c=conf[iceTemp];
+  badge.className=c.cls;
+  badge.innerHTML=c.icon+' '+c.text;
+}
+
+function tapAttrKey(val){
+  var idx=hearing.attrKeys.indexOf(val);
+  if(idx>=0){hearing.attrKeys.splice(idx,1);var cf=document.getElementById('attr-flash');if(cf.dataset.val===val)closeAttrFlash();}
+  else{hearing.attrKeys.push(val);showAttrFlash(val);var ak=ATTR_KEYWORDS.find(function(a){return a.val===val});showNotif('🎯 訴求軸',ak?ak.text:val);}
+  renderKeys();renderSheet();
+}
+
+function showAttrFlash(val){
+  var ak=ATTR_KEYWORDS.find(function(a){return a.val===val});if(!ak)return;
+  var flash=document.getElementById('attr-flash');
+  document.getElementById('af-label').textContent=ak.label;
+  document.getElementById('af-lines').innerHTML=ak.talks.map(function(t){return'<div class="af-line">'+t+'</div>'}).join('');
+  flash.dataset.val=val;flash.classList.add('show');
+  clearTimeout(attrFlashTimer);attrFlashTimer=setTimeout(function(){flash.classList.remove('show')},10000);
+}
+function closeAttrFlash(){clearTimeout(attrFlashTimer);document.getElementById('attr-flash').classList.remove('show');}
+function showNeedsWeakBanner(){document.getElementById('needs-weak-banner').classList.add('show');}
+function closeNeedsWeakBanner(){document.getElementById('needs-weak-banner').classList.remove('show');}
+function showBridgeConfirm(){document.getElementById('bridge-confirm').classList.add('show');}
+function closeBridgeConfirm(){document.getElementById('bridge-confirm').classList.remove('show');}
+
+function bridgeResult(result){
+  if(result==='appo'){showNotif('📅 次回アポ','アポ日時を設定してください');closeBridgeConfirm();}
+  else if(result==='handoff'){showNotif('🤝 バトンタッチ','先輩を呼んでください');closeBridgeConfirm();}
+  else if(result==='ng'){var ci=getSteps().findIndex(function(s){return s.id==='miきり'});if(ci>=0)goTo(ci);closeBridgeConfirm();showNotif('❌ NG','見切りクローズへ');}
+}
+
+function tapKey(id,field,val,cls){
+  var already=tappedKeys.has(id);
+  if(already){tappedKeys.delete(id);}else{tappedKeys.add(id);}
+
+  if(field==='__job'){
+    // 職業選択：単一選択
+    if(hearing.selectedJob===val){hearing.selectedJob=null;}else{hearing.selectedJob=val;}
+    renderKeys();renderSheet();renderGuide();renderJobBadge();
+    if(hearing.selectedJob)showNotif('🎯 職業',hearing.selectedJob+'向けトーク切替');
+    return;
+  }
+  if(field==='__yes_intent'){tappedKeys.delete(id);addYes('intent',1);return;}
+  if(field==='__yes_positive'){tappedKeys.delete(id);addYes('positive',1);return;}
+  if(field==='__close'){if(!already){var ci=getSteps().findIndex(function(s){return s.id==='close'});if(ci>=0)goTo(ci);showNotif('🎉 クロージングへ','ノークロで進む！');}renderKeys();return;}
+  if(field==='__concern'){if(!already){var ci=getSteps().findIndex(function(s){return s.id==='concern'});if(ci>=0)goTo(ci);showNotif('⚠ 懸念点処理へ','全肯定→深掘り→教育');}renderKeys();return;}
+  if(field==='__money'){if(!already){var ci=getSteps().findIndex(function(s){return s.id==='plan'});if(ci>=0)goTo(ci);showNotif('💴 資金確認へ','プランの話に進む');}renderKeys();return;}
+  if(field==='__family'){if(!already){showNotif('👨‍👩‍👧 家族相談','懸念ポイントを引き出す');}renderKeys();return;}
+  if(field==='__needs_weak'){flags.needsWeak=!already;if(!already){showNeedsWeakBanner();showNotif('⚠️ ニーズ薄','来場動機を掘り直す');}else if(!flags.visionVague){closeNeedsWeakBanner();}renderKeys();renderSheet();return;}
+  if(field==='__vision_vague'){flags.visionVague=!already;if(!already){showNeedsWeakBanner();showNotif('⚠️ ビジョン未定','未来拡張→自分ゴト化の順で進む');}else if(!flags.needsWeak){closeNeedsWeakBanner();}renderKeys();renderSheet();return;}
+  if(field==='__study_hard'){flags.studyHard=!already;if(!already){var ci=getSteps().findIndex(function(s){return s.id==='miきり'});if(ci>=0)goTo(ci);showNotif('🚫 見切りクローズへ','勉強時間確保困難');}renderKeys();renderSheet();return;}
+  if(field==='edu'){hearing.edu=already?null:val;}
+  else if(field==='transfer'){hearing.transfer=already?null:val;}
+  else if(field==='attr'){hearing.attr=already?null:val;}
+  else if(Array.isArray(hearing[field])){if(already){hearing[field]=hearing[field].filter(function(v){return v!==val});}else{hearing[field].push(val);}}
+  renderKeys();renderSheet();
+  if(!already)showNotif('✓ 記録',val);
+}
+
+// ============================================================
+// YES目標値：モード別設計
+//
+// 【ブリッジ】YESポイント15箇所（意図的13・ポジ2）
+//   目的：アポ取り・バトンタッチへの橋渡し
+//   意図的YES目標10 / ポジティブ目標1 / 合計目標11
+//   ⚠️ ポジが0のままでもアポは取れるが温度感が低い
+//      → クローザーへの引き継ぎ時に要申し送り
+//
+// 【クローザー】YESポイント27箇所（意図的18・ポジ9）
+//   目的：成約まで論理×感情を積み上げる
+//   意図的YES目標12 / ポジティブ目標6 / 合計目標20
+//   ⚠️ 意図的ばかりでポジ3未満 → 失注パターン
+// ============================================================
+// ============================================================
+// クライアント情報・商談結果・ストレージ
+// ============================================================
+var clientResult=null; // 'won'|'lost'|'pending'|'cut'
+// RESULT_CONF & BRIDGE_RESULT_CONF defined in app JS above
+
+
+function onClientInput(){
+  var name=document.getElementById('ci-name').value.trim();
+  updateSaveBtn();
+}
+
+function setResult(val){
+  clientResult=(clientResult===val)?null:val;
+  ['won','pending','cut','bridge','lost','money'].forEach(function(r){
+    var btn=document.getElementById('rb-'+r);
+    if(clientResult===r) btn.className='result-btn active-'+r;
+    else btn.className='result-btn';
+  });
+  if(clientResult) showNotif(RESULT_CONF[clientResult].icon+' 結果記録',RESULT_CONF[clientResult].label);
+  updateSaveBtn();
+}
+
+function updateSaveBtn(){
+  var nameEl=document.getElementById('ci-name');
+  var btn=document.getElementById('save-btn');
+  if(!nameEl||!btn) return;
+  var name=nameEl.value.trim();
+  btn.disabled=!(name && clientResult);
+}
+
+// 商談データをスナップショットとして保存
+async function saveRecord(){
+  var name=document.getElementById('ci-name').value.trim();
+  var dt=document.getElementById('ci-datetime').value;
+  if(!name||!clientResult) return;
+  if(!selectedStaff){alert('担当者が選択されていません');return;}
+  var record={
+    id:'rec_'+Date.now(),
+    user_id:selectedStaff.id,
+    client_name:name,
+    datetime:dt||new Date().toISOString().slice(0,16),
+    mode:mode,
+    result:clientResult,
+    bridge_result:'pre',
+    yes_intent:yesIntent,
+    yes_positive:yesPositive,
+    yes_total:yesIntent+yesPositive,
+    ice:hearing.ice,
+    ice_temp:iceTemp,
+    age:hearing.age?parseInt(hearing.age):null,
+    edu:hearing.edu,
+    selected_job:hearing.selectedJob,
+    job:hearing.job.slice(),
+    location:hearing.location.slice(),
+    income:hearing.income.slice(),
+    dream:hearing.dream.slice(),
+    concern:hearing.concern.slice(),
+    career:hearing.career.slice(),
+    transfer:hearing.transfer,
+    attr:hearing.attr,
+    attr_keys:hearing.attrKeys.slice(),
+    flags:{needsWeak:flags.needsWeak,visionVague:flags.visionVague,studyHard:flags.studyHard},
+    saved_at:Date.now()
+  };
+  var btn=document.getElementById('save-btn');
+  if(btn) btn.disabled=true;
+  var res=await sb.from('records').insert([record]);
+  if(res.error){alert('保存に失敗: '+res.error.message);if(btn)btn.disabled=false;return;}
+  showNotif('💾 記録完了',name+'さんの商談を保存しました');
+  setTimeout(function(){
+    if(confirm('記録しました！新しい商談を始めますか？')){resetAll();}
+  },300);
+}
+
+// 履歴表示
+async function openHistory(){window.goRecords&&window.goRecords();}
+function closeHistory(){showPage('page-script');}
+
+async function renderHistory(){
+  window.goRecords && window.goRecords();
+}
+async function loadRecords(){
+  var res=await sb.from('records').select('*').order('saved_at',{ascending:false});
+  return res.data||[];
+}
+
+async function setBridgeResult(id,val){
+  await sb.from('records').update({bridge_result:val}).eq('id',id);
+  var brc=BRIDGE_RESULT_CONF[val];
+  showNotif(brc.icon+' ブリッジ後更新',brc.label);
+}
+
+async function openModal(id){
+  window.openRecModal && window.openRecModal(id);
+}
+function closeModal(){
+  document.getElementById('hp-modal').classList.remove('open');
+}
+
+async function deleteRecord(id){
+  if(!confirm('この記録を削除しますか？')) return;
+  await sb.from('records').delete().eq('id',id);
+  closeModal();
+  showNotif('🗑 削除しました');
+}
+
+// ============================================================
+var YES_GOALS_BY_MODE={
+  bridge:{
+    intent:10, positive:1, total:11,
+    goodCond:   function(i,p,t){return i>=10 && p>=1;},
+    warnCond:   function(i,p,t){return t>=7 && p===0;},
+    dangerCond: function(i,p,t){return t>=10 && p===0;},
+    goodMsg:  '🔗 アポ取りのタイミング！ブリッジへ進んでOK',
+    warnMsg:  'ポジティブ反応がまだ出ていません。一郎の例えや美容師エピソードを使って',
+    dangerMsg:'⚠️ 同意はとれているが感情が動いていない。クローザー引き継ぎ時に温度感を申し送ること'
+  },
+  closer:{
+    intent:12, positive:6, total:20,
+    goodCond:   function(i,p,t){return t>=20 && p>=6 && (t>0?p/t:0)>=0.25;},
+    warnCond:   function(i,p,t){return t>=10 && p<6;},
+    dangerCond: function(i,p,t){return t>=12 && p<3 && (t>0?p/t:0)<0.2;},
+    goodMsg:  '🔥 成約圏！クロージングへ進めてOK',
+    warnMsg:  'ポジティブ反応をもっと引き出して。ピカチュウ・逆説クロージング・キャラ一致を使って',
+    dangerMsg:'⚠️ 意図的YESは多いが感情が動いていない。失注パターン。訴求軸を変えて'
+  }
+};
+
+function getYesGoals(){return YES_GOALS_BY_MODE[mode]||YES_GOALS_BY_MODE.closer;}
+
+function updateYesGoalLabels(){
+  var g=getYesGoals();
+  var s=document.getElementById('yes-mode-sub');
+  if(s) s.textContent='目標：意図的'+g.intent+' / ポジ'+g.positive+'以上';
+  var li=document.getElementById('yes-label-intent');
+  if(li) li.textContent='目標'+g.intent;
+  var lp=document.getElementById('yes-label-positive');
+  if(lp) lp.textContent='目標'+g.positive;
+  var lt=document.getElementById('yes-label-total');
+  if(lt) lt.textContent='/ 目標'+g.total;
+}
+
+function addYes(type, delta){
+  if(type==='intent'){
+    yesIntent=Math.max(0, yesIntent+delta);
+    if(delta>0) showNotif('🎯 意図的YES +1','意図的:'+yesIntent+' / ポジ:'+yesPositive);
+    else showNotif('🎯 意図的YES −1','意図的:'+yesIntent+' / ポジ:'+yesPositive);
+  } else {
+    yesPositive=Math.max(0, yesPositive+delta);
+    if(delta>0) showNotif('✨ ポジティブ反応 +1','意図的:'+yesIntent+' / ポジ:'+yesPositive);
+    else showNotif('✨ ポジティブ反応 −1','意図的:'+yesIntent+' / ポジ:'+yesPositive);
+  }
+  renderSheet();renderYes();
+}
+
+function renderYes(){
+  if(!document.getElementById('yes-num-intent')) return;
+  var g=getYesGoals();
+  var tot=yesIntent+yesPositive;
+  var pctI=Math.min(100,Math.round(yesIntent/g.intent*100));
+  var pctP=Math.min(100,Math.round(yesPositive/g.positive*100));
+  var pctT=Math.min(100,Math.round(tot/g.total*100));
+  var posiRatio=tot>0?yesPositive/tot:0;
+
+  document.getElementById('yes-num-intent').textContent=yesIntent;
+  document.getElementById('yes-num-positive').textContent=yesPositive;
+  document.getElementById('yes-num-total').textContent=tot;
+  document.getElementById('yes-fill-intent').style.width=pctI+'%';
+  document.getElementById('yes-fill-positive').style.width=pctP+'%';
+  document.getElementById('yes-fill-total').style.width=pctT+'%';
+  document.getElementById('yes-pct-intent').textContent=pctI+'%';
+  document.getElementById('yes-pct-positive').textContent=pctP+'%';
+
+  // 目標達成したらバー色を強調
+  document.getElementById('yes-fill-intent').style.background=yesIntent>=g.intent?'var(--green)':'var(--navy)';
+  document.getElementById('yes-fill-positive').style.background=yesPositive>=g.positive?'#2e7d32':'var(--green)';
+
+  // アラート判定（モード別）
+  var alertEl=document.getElementById('yes-alert');
+  alertEl.className='';alertEl.innerHTML='';
+  if(tot===0) return;
+
+  var details='意図的'+yesIntent+'回 / ポジ'+yesPositive+'回 / 合計'+tot+'回';
+  if(mode==='closer') details+=' / ポジ率'+Math.round(posiRatio*100)+'%';
+
+  if(g.goodCond(yesIntent,yesPositive,tot)){
+    alertEl.className='alert-good';
+    alertEl.innerHTML='<div class="yes-alert-title">'+g.goodMsg+'</div><div class="yes-alert-body">'+details+'</div>';
+  } else if(g.dangerCond(yesIntent,yesPositive,tot)){
+    alertEl.className='alert-danger';
+    alertEl.innerHTML='<div class="yes-alert-title">'+g.dangerMsg+'</div><div class="yes-alert-body">現在：'+details+'</div>';
+  } else if(g.warnCond(yesIntent,yesPositive,tot)){
+    alertEl.className='alert-warn';
+    var shortP=g.positive-yesPositive;
+    alertEl.innerHTML='<div class="yes-alert-title">△ '+g.warnMsg+'</div><div class="yes-alert-body">ポジ反応あと'+shortP+'回で目標。合計'+tot+'/'+g.total+'回</div>';
+  }
+}
+
+function renderSheet(){
+  var body=document.getElementById('sheet-body');
+  if(!body) return;
+  body.innerHTML=SHEET_SCHEMA.map(function(row){
+    if(row.section)return'<span class="sheet-section-head">'+row.section+'</span>';
+    var k=row.key,html='';
+    if(k==='_edu'){html=hearing.edu?'<span class="tag">'+hearing.edu+'</span>':'<span class="empty">—</span>';}
+    else if(k==='_yes_intent'){html='<span class="tag" style="background:var(--navy)">🎯 '+yesIntent+'回</span>';}
+    else if(k==='_yes_positive'){html='<span class="tag" style="background:var(--green)">✨ '+yesPositive+'回</span>';}
+    else if(k==='_yes_total'){var tot=yesIntent+yesPositive;html='<span class="tag" style="background:var(--orange)">合計 '+tot+'回</span>'+(tot>=8?'<span class="tag" style="background:var(--green);margin-left:4px">🔥 クロージング圏</span>':tot>=5?'<span class="tag yellow" style="margin-left:4px">△ あと'+(8-tot)+'回</span>':'');}
+    else if(k==='_flags'){
+      var fh='';
+      if(flags.needsWeak)fh+='<span class="tag yellow">⚠️ ニーズ薄</span>';
+      if(flags.visionVague)fh+='<span class="tag yellow">⚠️ ビジョン未定</span>';
+      if(flags.studyHard)fh+='<span class="tag red">🚫 勉強困難</span>';
+      html=fh||'<span class="empty">—</span>';
+    }else if(k==='ice'){if(hearing.ice){var grp=KEY_GROUPS.find(function(g){return g.iceGroup;});var item=grp?grp.keys.find(function(ki){return ki.val===hearing.ice}):null;html=item?'<span class="tag orange">'+item.text+'</span>':'<span class="empty">—</span>';}else html='<span class="empty">—</span>';}
+    else if(k==='_ice_temp'){
+      if(!iceTemp||!hearing.ice){html='<span class="empty">—</span>';}
+      else{var itconf={cold:{bg:'#E3F2FD',c:'#1565C0',icon:'🧊',t:'まだ固い'},warm:{bg:'#E8F5E9',c:'#2E7D32',icon:'😊',t:'雰囲気和んだ'},hot:{bg:'#FFF3E0',c:'#E65100',icon:'😂',t:'笑い取れた'}};var itc=itconf[iceTemp];html='<span class="tag" style="background:'+itc.bg+';color:'+itc.c+'">'+itc.icon+' '+itc.t+'</span>';}
+    }
+    else if(k==='age'){html=hearing.age?'<span class="tag green">'+hearing.age+'歳</span>':'<span class="empty">—</span>';}
+    else if(k==='selectedJob'){html=hearing.selectedJob?'<span class="tag teal">'+hearing.selectedJob+'</span>':'<span class="empty">—</span>';}
+    else if(k==='attrKeys'){html=hearing.attrKeys.length?hearing.attrKeys.map(function(val){var ak=ATTR_KEYWORDS.find(function(a){return a.val===val});return ak?'<span class="tag teal">'+ak.text+'</span>':''}).join(''):'<span class="empty">—</span>';}
+    else if(Array.isArray(hearing[k])){html=hearing[k].length?hearing[k].map(function(v){return'<span class="tag">'+v+'</span>'}).join(''):'<span class="empty">—</span>';}
+    else if(k==='transfer'){html=hearing.transfer?'<span class="tag orange">'+TRANSFER_LABELS[hearing.transfer]+'</span>':'<span class="empty">—</span>';}
+    else if(k==='attr'){html=hearing.attr?'<span class="tag orange">'+ATTR_LABELS[hearing.attr]+'</span>':'<span class="empty">—</span>';}
+    else{var val=hearing[k];html=val?'<span class="tag green">'+val+'</span>':'<span class="empty">—</span>';}
+    return'<div class="sheet-row"><div class="sheet-label">'+row.label+'</div><div class="sheet-val">'+html+'</div></div>';
+  }).join('');
+}
+
+// ============================================================
+// ガイド描画：職業別トークを差し込む
+// ============================================================
+function renderBlockHtml(b){
+  if(b.type==='talk')return'<div class="talk-line '+(b.cls||'')+'">'+b.text+'</div>';
+  if(b.type==='note')return'<div class="guide-note '+(b.cls||'')+'">'+b.text+'</div>';
+  if(b.type==='yes_check'){
+    var t=b.ytype||'intent';
+    var pill=t==='intent'?'<span class="yck-type intent">🎯 意図的YES</span>':'<span class="yck-type positive">✨ ポジティブ反応</span>';
+    return'<div class="yes-check-block">'+
+      '<span class="yes-check-label">'+pill+b.label+'</span>'+
+      '<div class="yes-check-btns">'+
+        '<button class="ycb-btn minus" onclick="addYes(\''+t+'\',-1)">－</button>'+
+        '<button class="ycb-btn '+t+'" onclick="addYes(\''+t+'\',1)">＋ 記録</button>'+
+      '</div>'+
+    '</div>';
+  }
+  return'';
+}
+
+function renderGuide(){
+  var steps=getSteps();
+  var s=steps[currentStep];
+  if(!s)return;
+  var isBridgeEnd=(mode==='bridge'&&s.bridgeEnd);
+  var head=document.getElementById('guide-step-head');
+  if(!head) return;
+  head.className=isBridgeEnd?'bridge-head':'';
+  document.getElementById('guide-step-num').textContent='STEP '+String(currentStep+1).padStart(2,'0')+' / '+steps.length+(mode==='bridge'?' 🔗':' ⚡');
+  document.getElementById('guide-step-title').textContent=s.name;
+  document.getElementById('guide-step-sub').textContent=s.sub;
+  document.getElementById('guide-goal').textContent='🎯 '+s.goal;
+  renderJobBadge();
+
+  var body=document.getElementById('guide-body');
+  body.innerHTML=s.guide.map(function(block){
+    var items=block.blocks.map(function(b){
+      // job-talkプレースホルダーを職業別トークで差し替え
+      if(b.cls==='job-talk'){
+        var jt=getJobTalksForStep(s.id==='career'?'career':s.id==='now'?'now':s.id==='vision'?'vision':null);
+        if(jt&&jt.talks){
+          return jt.talks.map(function(t){return'<div class="talk-line job-talk">'+t+'</div>';}).join('');
+        }else{
+          return'<div class="talk-line job-talk" style="opacity:.5">（左カラムで職業をタップすると職業別トークが表示されます）</div>';
+        }
+      }
+      return renderBlockHtml(b);
+    }).join('');
+    return'<div class="guide-block"><div class="guide-block-label">'+block.label+'</div>'+items+'</div>';
+  }).join('');
+  renderNav();
+}
+
+function renderStepper(){
+  var steps=getSteps();
+  var el=document.getElementById('stepper');
+  if(!el) return;
+  var html='';
+  steps.forEach(function(s,i){
+    if(i>0)html+='<div class="step-connector '+(i<=currentStep?'done':'')+'"></div>';
+    var cls=i===currentStep?'active':i<currentStep?'done':'';
+    if(mode==='bridge'&&s.bridgeEnd)cls+=' bridge-end';
+    html+='<div class="step-pip '+cls+'" onclick="goTo('+i+')" title="'+s.name+'">'+(i+1)+'</div>';
+  });
+  el.innerHTML=html;
+  var s=steps[currentStep];
+  document.getElementById('header-badge').textContent=s?s.name:'—';
+}
+
+function renderNav(){
+  var steps=getSteps();
+  document.getElementById('nav-prev').disabled=currentStep===0;
+  document.getElementById('nav-next').disabled=currentStep===steps.length-1;
+  document.getElementById('nav-label').textContent=(currentStep+1)+' / '+steps.length;
+}
+
+function next(){
+  var steps=getSteps();var s=steps[currentStep];
+  if(mode==='bridge'&&s&&s.bridgeEnd){showBridgeConfirm();return;}
+  if(currentStep<steps.length-1){currentStep++;closeBridgeConfirm();renderGuide();renderStepper();}
+}
+function prev(){if(currentStep>0){currentStep--;closeBridgeConfirm();renderGuide();renderStepper();}}
+function goTo(i){currentStep=i;closeBridgeConfirm();renderGuide();renderStepper();}
+document.addEventListener('keydown',function(e){if(e.key==='ArrowRight')next();if(e.key==='ArrowLeft')prev();});
+
+function showNotif(title,sub){
+  if(notifTimer)clearTimeout(notifTimer);
+  var el=document.getElementById('app-notif')||document.getElementById('notif');
+  if(!el) return;
+  el.innerHTML='<strong>'+title+'</strong>'+(sub?'　'+sub:'');
+  el.classList.add('show');
+  notifTimer=setTimeout(function(){el.classList.remove('show')},2500);
+}
+
+function resetAll(){
+  if(!confirm('ヒアリング情報をリセットしますか？'))return;
+  currentStep=0;yesIntent=0;yesPositive=0;iceTemp=null;tappedKeys.clear();
+  clientResult=null;
+  ['won','pending','cut','bridge','lost','money'].forEach(function(r){document.getElementById('rb-'+r).className='result-btn';});
+  document.getElementById('ci-name').value='';
+  document.getElementById('ci-datetime').value='';
+  document.getElementById('save-btn').disabled=true;
+  flags={needsWeak:false,visionVague:false,studyHard:false};
+  hearing={ice:null,age:null,edu:null,location:[],job:[],career:[],transfer:null,income:[],dream:[],concern:[],attr:null,budget:null,motivation:null,attrKeys:[],selectedJob:null};
+  closeAttrFlash();closeNeedsWeakBanner();closeBridgeConfirm();renderAll();
+}
+
+function renderAll(){renderKeys();renderSheet();renderGuide();renderStepper();updateYesGoalLabels();renderYes();renderIceBadge();}
+// 初期日時セット
+// init called by initScriptPage()
+
+// ============================================================
+// アプリ起動
+// ============================================================
+window.addEventListener('DOMContentLoaded', function() {
+  initApp();
+});
+</script>
+</body>
+</html>
